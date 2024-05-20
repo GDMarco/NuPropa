@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Plugin template
 
 To create your own CRPropa modules in C++ we recommend using plugins. Plugins are small programs that can be installed as a separate modules. 
@@ -37,3 +38,7 @@ After configuration (press c) and generation (press g) you can now build and ins
 Now you can run the python test script. 
 
     python ../testPlugin.py
+=======
+# NeutrinoNeutrinoInteraction
+CRPropa code plugin to implement the interactions between neutrinos.
+>>>>>>> 81f1438ab828df689c0d7e54f1aaf46ebd684b91
