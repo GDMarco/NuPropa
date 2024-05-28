@@ -1,4 +1,5 @@
 #include <crpropa/Module.h>
+#include <crpropa/NeutrinoBackground.h>
 
 namespace crpropa {
 /// A custom C++ module for Neutrino-Neutrino Interactions in astorphysical scenarios
