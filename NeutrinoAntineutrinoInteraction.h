@@ -28,8 +28,10 @@ private:
     std::vector<std::vector<double>> tabE;
     std::vector<std::vector<double>> tabs;
     std::vector<std::vector<std::vector<double>>> tabCDF;
+    std::vector<std::vector<int>> tabProductsID;
     
     std::unordered_map<int, std::string> interactionDictionary;
+    std::vector<std::vector<double>> channelProbability; // to be sync with interactionDictionary
 public:
     /// The parent's constructor need to be called on initialization!
     NeutrinoNeutrinoInteraction(ref_ptr<NeutrinoField>, bool haveSecondaries = false, ref_ptr<Channels> channels, double limit = 0.1); // double thinning = 0,
@@ -61,6 +63,7 @@ public:
     std::vector<double> fillTableZeros(std::vector<double> table, int size); // table is the vector and the size is the size I want to obtain
     // fill the vector with zeros from the beginning
     std::vector<double> getTabulatedRateEnergy(int ID, int nuBkgID);
+    void computeInteractionProbabilities (std::vector<std::vector<double>> rates);
     
     /** set a custom interaction tag to trace back this interaction
      * @param tag string that will be added to the candidate and output

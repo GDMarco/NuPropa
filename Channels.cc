@@ -29,6 +29,10 @@ std::string getInteractionFolderPath() const {
     return this->interactionFolderPath;
 }
 
+std::vector<std::vector<int>> getProductsID() const {
+    return this->productsID;
+}
+
 int Channels::getChannelIndex(std::string interactionChannel) const {
     int indexChannel = -1;
     
@@ -54,7 +58,34 @@ std::vector<std::string> Channels::readInteractionChannels(std::string interacti
     for (auto const& dir_entry : std::__fs::filesystem::directory_iterator{dir}) {
         interactionChannels.push_back(dir_entry.path().string());
     }
+    
     return interactionChannels;
+}
+
+std::vector<std::vector<int>> Channels::readProductsID(std::string interactionFolderPath) {
+    std::__fs::filesystem::path dir = interactionFolderPath;
+    std::vector<std::string> interactionChannels;
+    
+    for (auto const& dir_entry : std::__fs::filesystem::directory_iterator{dir}) {
+        
+        std::string filePath = interactionFolderPath + dir + "products.txt";
+        
+        // open a productsID.txt file and read the ID numbers
+        std::ifstream infile(filePath.c_str());
+        if (!infile.good)
+            throw std::runtime_error("Could not open " + filePath);
+        
+        std::string line;
+        while (std::getline(infile, line)) {
+            std::vector<int> vecIDs;
+            
+            if ((line.size() > 0) & (line[0] != '#'))
+                vecIDs.push_back(std::stoi(line));
+        }
+        infile.close();
+        productsID.push_back(vecIDs);
+    }
+    return productsID;
 }
 
 void Channels::setChannelsActive(std::vector<bool> active) {
@@ -70,7 +101,7 @@ void Channels::setInactiveChannel(std::string interactionChannel) {
         if (this->interactionChannels[i] == interactionChannel) {
             this->active[i] = false;
         } else {
-            continue
+            continue;
         }
     }
 }
