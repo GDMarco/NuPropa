@@ -206,6 +206,7 @@ std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteract
         int totalFlavour = abs(ID) + abs(IDBkg);
         if (totalFlavour == 26) { // for the rate there's no difference on the cross section apart from the energy threshold that depends on the mass of the products, TO CHECK!
             // now it does matter! to establish for the six cases! parity equivalence
+            // actually it does not matter, since to find the products I use another method
             iLep = searchChannel("NeutrinoiAntineutrinoj", "ElectronAntimuon");
         } else if (totalFlavour == 28) {
             iLep = searchChannel("NeutrinoiAntineutrinoj", "ElectronAntitau");
@@ -239,6 +240,7 @@ std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteract
             computeInteractionProbability(resizedVectors);
             
             return std::make_pair<this->tableEnergy[iElastic], totalRate>;
+            
         }
     }
 }
@@ -268,23 +270,6 @@ void NeutrinoAntineutrinoInteraction::computeInteractionProbabilities (std::vect
                         // 1                    0.1
                         // 2                    0.8
                         // 3                    0.1
-}
-
-std::vector<int> NeutrinoAntineutrinoInteraction::getProductsID(int ID, int IDBkg, std::string ) {
-    
-    if (abs(ID) == abs(ID0Bkg)) {
-        
-        std::vector<int> IDs = ;
-        
-        return IDs;
-    } else {
-        
-        
-        std::vector<int> IDs = ;
-        
-        return IDs;
-    }
-    
 }
 
 void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate) const {
