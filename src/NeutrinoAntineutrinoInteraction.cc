@@ -214,15 +214,20 @@ std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteract
             iLep = searchChannel("NeutrinoiAntineutrinoj", "TauAntimuon");
         }
         
-        if (iElastic == 50) { // the case for iLep == 50??? and for both 50??
-            
+        if ((iElastic == 50) && (iLep != 50)) { // the case for iLep == 50??? and for both 50??
             size_t size = this->tabEnergy[iLep].size();
-            std::vector<double> vecProb(size, 1)
+            std::vector<double> vecProb(size, 1);
             this->channelProbability.push_back(vecProb);
             
             return std::make_pair<this->tabEnergy[iLep], this->tabRate[iLep]>;
+        } else if ((iElastic != 50) && (iLep == 50)) {
+            size_t size = this->tabEnergy[iElastic].size();
+            std::vector<double> vecProb(size, 1);
+            this->channelProbability.push_back(vecProb);
             
-        } else {
+            return std::make_pair<this->tabEnergy[iElastic], this->tabRate[iElastic]>;
+            
+        } else if ((iElastic != 50) && (iLep != 50)) {
             
             size_t sizeElasticRate = this->tabRate[iElastic].size();
             std::vector<double> elasticRate = this->tabRate[iElastic];
@@ -241,6 +246,8 @@ std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteract
             
             return std::make_pair<this->tableEnergy[iElastic], totalRate>;
             
+        } else {
+            throw std::runtime_error("No active nu-antinu channels! Reset it.");
         }
     }
 }
