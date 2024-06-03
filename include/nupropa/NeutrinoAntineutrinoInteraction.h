@@ -1,40 +1,46 @@
+#ifndef NEUTRINOANTINEUTRINOINTERACTION_H
+#define NEUTRINOANTINEUTRINOINTERACTION_H
+
 #include <crpropa/Module.h>
-#include "NeutrinoAntineutrinoInteraction.h"
-#include "Channels.h"
-#include "crpropa/Units.h"
-#include "crpropa/Random.h"
+#include <crpropa/Units.h>
+#include <crpropa/Random.h>
+
+#include "nupropa/NeutrinoBackground.h"
+#include "nupropa/Channels.h"
 
 #include <string>
 
 
-namespace crpropa {
+namespace nupropa {
+
+using namespace crpropa;
 /// A custom C++ module for Neutrino-Neutrino Interactions in astorphysical scenarios
 class NeutrinoAntineutrinoInteraction : public Module
 {
 private:
     
     ref_ptr<NeutrinoField> neutrinoField;
-    int neutrinoFieldID; // = 12; // check the initialization!
-    bool haveSecondaries;
     ref_ptr<Channels> channels;
+    bool haveSecondaries;
     double limit;
     //double thinning;
+    mutable std::string interactionTag;
     
-    std::string interactionTag = "NuAntiNuI";
-    
+    int neutrinoFieldID = 12; // check the initialization!
     std::vector<std::vector<double>> tabEnergy; // 4 columns table depending on the neutrino flavour and number, in initRate they should be built properly
-    std::vector<std::vector<double>> tabRate;
+    mutable std::vector<std::vector<double>> tabRate;
     
     std::vector<std::vector<double>> tabE;
     std::vector<std::vector<double>> tabs;
     std::vector<std::vector<std::vector<double>>> tabCDF;
-    std::vector<std::vector<int>> tabProductsID;
+    mutable std::vector<std::vector<int>> tabProductsID;
+    mutable std::vector<int> selectedProductsID;
     
     std::unordered_map<int, std::string> interactionDictionary;
-    std::vector<std::vector<double>> channelProbability; // to be sync with interactionDictionary
+    mutable std::vector<std::vector<double>> channelProbability; // to be sync with interactionDictionary
 public:
     /// The parent's constructor need to be called on initialization!
-    NeutrinoNeutrinoInteraction(ref_ptr<NeutrinoField>, bool haveSecondaries = false, ref_ptr<Channels> channels, double limit = 0.1); // double thinning = 0,
+    NeutrinoAntineutrinoInteraction(ref_ptr<NeutrinoField>, ref_ptr<Channels> channels, bool haveSecondaries, double limit); // double thinning = 0,
     
     // set the target neutrino field
     void setNeutrinoField(ref_ptr<NeutrinoField> neutrinoField);
@@ -58,17 +64,16 @@ public:
      * @param channels flags
      */
     void setChannels(ref_ptr<Channels> channels);
-    
-    int searchChannel(std::string interacting, std::string products);
-    std::vector<double> fillTableZeros(std::vector<double> table, int size); // table is the vector and the size is the size I want to obtain
-    // fill the vector with zeros from the beginning
-    std::vector<double> getTabulatedRateEnergy(int ID, int nuBkgID);
-    void computeInteractionProbabilities (std::vector<std::vector<double>> rates);
+    std::vector<double> fillTableZeros(std::vector<double> table, size_t size) const;
+    int searchChannel(std::string interacting, std::string products) const;
+    std::vector<std::vector<double>> getRateTables(int ID, int nuBkgID) const;
+    void computeInteractionProbabilities (std::vector<std::vector<double>> rates) const;
+    void getProductsID(std::vector<double> tabEnergy, double E) const;
     
     /** set a custom interaction tag to trace back this interaction
      * @param tag string that will be added to the candidate and output
      */
-    void setInteractionTag(std::string tag);
+    void setInteractionTag(std::string tag) const;
     std::string getInteractionTag() const;
     
     void initRate(std::string fname);
@@ -80,3 +85,4 @@ public:
 };
 
 } // end namespace crpropa
+#endif

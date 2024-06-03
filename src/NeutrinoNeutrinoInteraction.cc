@@ -1,12 +1,14 @@
-#include "NeutrinoNeutrinoInteraction.h"
-#include "crpropa/Units.h"
-#include "crpropa/Random.h"
+#include "nupropa/NeutrinoNeutrinoInteraction.h"
+#include "nupropa/NeutrinoBackground.h"
+#include <crpropa/Units.h>
+#include <crpropa/Random.h>
 
 #include <string>
 #include <fstream>
 
-namespace crpropa {
+namespace nupropa {
 
+using namespace crpropa;
 // The parent's constructor need to be called on initialization!
 NeutrinoNeutrinoInteraction::NeutrinoNeutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, bool haveSecondaries, double limit) : Module() {
     setNeutrinoField(neutrinoField);

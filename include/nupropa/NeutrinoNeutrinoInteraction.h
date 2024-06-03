@@ -1,7 +1,12 @@
-#include <crpropa/Module.h>
-#include <crpropa/NeutrinoBackground.h>
+#ifndef NEUTRINONEUTRINOINTERACTION_H
+#define NEUTRINONEUTRINOINTERACTION_H
 
-namespace crpropa {
+#include <crpropa/Module.h>
+#include "nupropa/NeutrinoBackground.h"
+
+namespace nupropa {
+
+using namespace crpropa;
 /// A custom C++ module for Neutrino-Neutrino Interactions in astorphysical scenarios
 class NeutrinoNeutrinoInteraction : public Module
 {
@@ -11,7 +16,6 @@ private:
     int neutrinoFieldID = 12; // check the initialization!
     bool haveSecondaries;
     double limit;
-    
     std::string interactionTag = "NuNuI";
     
     std::vector<std::vector<double>> tabEnergy; // 4 columns table depending on the neutrino flavour and number, in initRate they should be built properly
@@ -50,4 +54,6 @@ public:
     
 };
 
-} // end namespace crpropa
+} // end namespace nupropa
+
+#endif

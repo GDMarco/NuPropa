@@ -1,19 +1,24 @@
-#include "NeutrinoAntineutrinoInteraction.h"
-#include "Channels.h"
-#include "crpropa/Units.h"
-#include "crpropa/Random.h"
+#include "nupropa/NeutrinoAntineutrinoInteraction.h"
+#include "nupropa/Channels.h"
+#include "nupropa/NeutrinoBackground.h"
+#include <crpropa/Units.h>
+#include <crpropa/Random.h>
 
 #include <string>
 #include <filesystem>
 #include <unordered_map>
+#include <fstream>
+#include <vector>
 
-namespace crpropa {
+namespace nupropa {
+
+using namespace crpropa;
 
 // The parent's constructor need to be called on initialization!
-NeutrinoAntineutrinoInteraction::NeutrinoAntineutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, bool haveSecondaries, ref_ptr<Channels> channels, double limit) : Module() { // double thinning
+NeutrinoAntineutrinoInteraction::NeutrinoAntineutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, ref_ptr<Channels> channels, bool haveSecondaries, double limit) : Module() { // double thinning
     setChannels(channels);
     setNeutrinoField(neutrinoField);
-    setHaveSecondary(haveSecondaries);
+    setHaveSecondaries(haveSecondaries);
     setLimit(limit);
     //setThinning(thinning);
 }
@@ -21,7 +26,7 @@ NeutrinoAntineutrinoInteraction::NeutrinoAntineutrinoInteraction(ref_ptr<Neutrin
 /**
  One assumes that the tables have been produced within the same computation, so the energy bins are the same.
  
- In the case of the neutrino-antineutrino interactions the elastic scatterings furnish the tabEnergy, since they do not have interaction energy thresholds!
+ In the case of the neutrino-antineutrino interactions the elastic scatterings furnish the tabEnergy, since they do not have interaction energy thresholds (almost)!
  */
 
 // channels should be an unordered map <bool, "interaction">, maybe interaction tag? setChannels should be a way of filling this object, knowing how they are ordered!
@@ -58,9 +63,11 @@ void NeutrinoAntineutrinoInteraction::initRate(std::string fname) {
     tabEnergy.clear();
     tabRate.clear();
     
-    std::string pathInteraction = this->channels->getInteractionFolderPath();
+    std::string path = this->channels->getInteractionFolderPath();
+    std::vector<std::vector<int>> products = this->channels->getProductsID();
     std::vector<std::string> interactionChannel = this->channels->getInteractionChannels();
     std::vector<bool> activeChannels = this->channels->getActiveChannels();
+    
     std::unordered_map<int, std::string> interactionDictionary;
     int iChannels = 0;
     
@@ -69,11 +76,11 @@ void NeutrinoAntineutrinoInteraction::initRate(std::string fname) {
         if (!activeChannels[i]) {
             continue;
         } else {
-            filename = path + interactionChannels[i] + "/rate_" + fname + ".txt";
+            std::string filename = path + interactionChannel[i] + "/rate_" + fname + ".txt";
             std::ifstream infile(filename.c_str());
             
             if (!infile.good())
-                throw std::runtime_error(folder + ": could not open file" + filename);
+                throw std::runtime_error("Could not open file: " + filename);
             
             std::vector<double> vecEnergy;
             std::vector<double> vecRate;
@@ -93,9 +100,10 @@ void NeutrinoAntineutrinoInteraction::initRate(std::string fname) {
             
             this->tabEnergy.push_back(vecEnergy);
             this->tabRate.push_back(vecRate);
-            this->tabProductsID.push_back(this->channels->getProductsID()[i]) // see if it works, if not define it in advance
             
-            interactionDictionary[iChannels] = interactionChannels[i];
+            this->tabProductsID.push_back(products[i]); // see if it works, if not define it in advance
+            
+            interactionDictionary[iChannels] = interactionChannel[i];
             
             iChannels = iChannels + 1;
         }
@@ -105,7 +113,7 @@ void NeutrinoAntineutrinoInteraction::initRate(std::string fname) {
     }
 }
 
-int NeutrinoAntineutrinoInteraction::searchChannel(std::string interacting, std::string products) {
+int NeutrinoAntineutrinoInteraction::searchChannel(std::string interacting, std::string products) const {
     std::string totalChannel = interacting + products;
     
     for (const auto& el : this->interactionDictionary) {
@@ -121,11 +129,11 @@ int NeutrinoAntineutrinoInteraction::searchChannel(std::string interacting, std:
     return 50; // not active channel
 }
 
-std::vector<double> NeutrinoAntineutrinoInteraction::fillTableZeros(std::vector<double> table, size_t size) {
+std::vector<double> NeutrinoAntineutrinoInteraction::fillTableZeros(std::vector<double> table, size_t size) const {
     if (table.size() < size) {
-        difference = size - table.size();
+        double difference = size - table.size();
         table.insert(table.begin(), difference, 0);
-        return resizedTable;
+        return table;
     } else if (table.size() == size) {
         return table;
     } else {
@@ -134,7 +142,7 @@ std::vector<double> NeutrinoAntineutrinoInteraction::fillTableZeros(std::vector<
 }
 
 // think about moving it to Channels.cc, using as arguments this->tabEnergy(), this->tabRate()
-std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteraction::getRateTables(int ID, int IDBkg) {
+std::vector<std::vector<double>> NeutrinoAntineutrinoInteraction::getRateTables(int ID, int IDBkg) const {
     if (abs(ID) == abs(IDBkg)) {
         setInteractionTag("NuAntiNuInt");
         
@@ -170,7 +178,7 @@ std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteract
                 this->tabProductsID.erase(this->tabProductsID.begin() + j);
             } else {
                 // maybe also here is needed the erase function! more efficient
-                int tableSize = this->tabRate[indexes[j]];
+                int tableSize = this->tabRate[indexes[j]].size();
                 if (tableSize > maximumTableSize) {
                     maximumTableSize = tableSize;
                     maximumIndex = indexes[j];
@@ -183,16 +191,22 @@ std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteract
         std::vector<std::vector<double>> resizedVectors;
         
         for (size_t j; j < activeIndexes.size(); ++j) {
-            std::vector<double> resizedRate = fillTableZeros(this->tabRate[activeIndexes[j]], maximumTableSize)
-            resizedVectors.append(resizedRate);
+            std::vector<double> resizedRate = fillTableZeros(this->tabRate[activeIndexes[j]], maximumTableSize);
+            resizedVectors.push_back(resizedRate);
             
             for (int k = 0; k < maximumTableSize; ++k) {
                 totalRate[k] = totalRate[k] + resizedRate[k];
             }
         } // to review!
         
-        computeInteractionProbabilities(resizedVectors); // make sure it is sync with the interactionDictionary --> it's not sync with the interaction dictionary.
-        return std::make_pair<this->tabEnergy[maximumIndex], totalRate>;
+        computeInteractionProbabilities(resizedVectors); // make sure it is sync with the interactionDictionary
+        std::vector<double> tabEnergy = this->tabEnergy[maximumIndex];
+        
+        std::vector<std::vector<double>> tablesRate;
+        tablesRate.push_back(tabEnergy);
+        tablesRate.push_back(totalRate);
+        
+        return tablesRate;
         
     } else {
         
@@ -219,13 +233,21 @@ std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteract
             std::vector<double> vecProb(size, 1);
             this->channelProbability.push_back(vecProb);
             
-            return std::make_pair<this->tabEnergy[iLep], this->tabRate[iLep]>;
+            std::vector<std::vector<double>> tablesRate;
+            tablesRate.push_back(this->tabEnergy[iLep]);
+            tablesRate.push_back(this->tabRate[iLep]);
+            return tablesRate;
+        
         } else if ((iElastic != 50) && (iLep == 50)) {
             size_t size = this->tabEnergy[iElastic].size();
             std::vector<double> vecProb(size, 1);
             this->channelProbability.push_back(vecProb);
             
-            return std::make_pair<this->tabEnergy[iElastic], this->tabRate[iElastic]>;
+            std::vector<std::vector<double>> tablesRate;
+            tablesRate.push_back(this->tabEnergy[iElastic]);
+            tablesRate.push_back(this->tabRate[iElastic]);
+            
+            return tablesRate;
             
         } else if ((iElastic != 50) && (iLep != 50)) {
             
@@ -242,9 +264,13 @@ std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteract
             
             resizedVectors.push_back(resizedLepRate);
             resizedVectors.push_back(elasticRate);
-            computeInteractionProbability(resizedVectors);
+            computeInteractionProbabilities(resizedVectors);
             
-            return std::make_pair<this->tableEnergy[iElastic], totalRate>;
+            std::vector<std::vector<double>> tablesRate;
+            tablesRate.push_back(this->tabEnergy[iElastic]);
+            tablesRate.push_back(totalRate);
+            
+            return tablesRate;
             
         } else {
             throw std::runtime_error("No active nu-antinu channels! Reset it.");
@@ -252,7 +278,7 @@ std::pair<std::vector<double>, std::vector<double>> NeutrinoAntineutrinoInteract
     }
 }
 
-void NeutrinoAntineutrinoInteraction::computeInteractionProbabilities (std::vector<std::vector<double>> rates) {
+void NeutrinoAntineutrinoInteraction::computeInteractionProbabilities (std::vector<std::vector<double>> rates) const {
     size_t cols = rates[0].size();
     size_t rows = rates.size();
     
@@ -293,46 +319,27 @@ void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate) c
     
     double z = candidate->getRedshift();
     double E = candidate->current.getEnergy() * (1 + z);
-    int ID = candidate->current.getID();
-    
-    // IDs of the secondaries particles
-    std::vector<int> getProductsID(ID, IDBkg);
+    int ID = candidate->current.getId();
     
     // energies of the secondary particles
     Random &random = Random::instance();
     Vector3d pos = random.randomInterpolatedPosition(candidate->previous.getPosition(), candidate->current.getPosition());
+    // naive values
+    double E1 = E / 10.;
+    double E2 = E - E1;
     
     if (haveSecondaries)
-        candidate->addSecondary(ID1, E1 / (1 + z), pos, w, interactionTag);
-        candidate->addSecondary(ID2, E2 / (1 + z), pos, w, interactionTag);
+        candidate->addSecondary(this->selectedProductsID[0], E1 / (1 + z), pos, w, this->interactionTag);
+        candidate->addSecondary(this->selectedProductsID[1], E2 / (1 + z), pos, w, this->interactionTag);
 }
 
-void NeutrinoAntineutrinoInteraction::process(Candidate *candidate) const
-{
-    
-    // scale the electron energy instead of background photons
-    double z = candidate->getRedshift();
-    double E = (1 + z) * candidate->current.getEnergy();
-    int ID = candidate->current.getID();
-    int IDBkg = this->neutrinoFieldID;
-    
-    if (!(abs(ID) == 12 || abs(ID) == 14 || abs(ID) == 16))
-        return;
-
-    auto tablesRate = getRateTables(ID, IDBkg); // another option is to use a struct twoTables...
-    std::vector<double> tabEnergy = tablesRate.first;
-    std::vector<double> tabRate = tablesRate.second;
-   
-    // check if in tabulated energy range
-    if (E < tabEnergy.front() or (E > tabEnergy.back()))
-        return;
-    
-    //from here it might be a function to get the channel!
+void NeutrinoAntineutrinoInteraction::getProductsID(std::vector<double> tabEnergy, double E) const {
     // take the index i of the closest tabEnergy[i] to E
+    
     double distEnergy = 1e6; // to minimize this value
     int iEnergy = -1;
     for (int i; i <= tabEnergy.size(); ++i) {
-        dist = abs(E - tabEnergy[i]);
+        double dist = abs(E - tabEnergy[i]);
         if (dist < distEnergy) {
             distEnergy = dist;
             iEnergy = i;
@@ -344,7 +351,7 @@ void NeutrinoAntineutrinoInteraction::process(Candidate *candidate) const
     
     // randomly select the interaction channel
     Random &randomChannel = Random::instance();
-    double channel = randomChannel.rand();
+    double iRand = randomChannel.rand();
     
     double tabCDFLow = 0;
     double tabCDFUpp = 0;
@@ -360,18 +367,40 @@ void NeutrinoAntineutrinoInteraction::process(Candidate *candidate) const
         }
     }
     
-    std::vector<int> IDs = this->tabProductsID[selChannel];
+    const std::vector<int> IDs = this->tabProductsID[selChannel];
+    this->selectedProductsID = IDs;
     // see the correspondence between the id and the selected channel -> assign the products IDs
     // to take into account parity invariance of the processes... !
     // for the elastic scatterings there are initialising values!
     
     // end of the function to get the IDs!
+}
+
+void NeutrinoAntineutrinoInteraction::process(Candidate *candidate) const
+{
+    
+    // scale the electron energy instead of background photons
+    double z = candidate->getRedshift();
+    double E = (1 + z) * candidate->current.getEnergy();
+    int ID = candidate->current.getId();
+    int IDBkg = this->neutrinoFieldID;
+    
+    if (!(abs(ID) == 12 || abs(ID) == 14 || abs(ID) == 16))
+        return;
+
+    std::vector<std::vector<double>> tablesRate = getRateTables(ID, IDBkg); // another option is to use a struct twoTables...
+    std::vector<double> tabEnergy = tablesRate[0];
+    std::vector<double> tabRate = tablesRate[1];
+   
+    // check if in tabulated energy range
+    if (E < tabEnergy.front() or (E > tabEnergy.back()))
+        return;
+    
+    getProductsID(tabEnergy, E);
     
     // interaction rate
     double rate = interpolate(E, tabEnergy, tabRate);
     rate *= pow_integer<2>(1 + z) * neutrinoField->getRedshiftScaling(z); // see how it is implemented this function in NeutrinoBackground.h
-    
-    
     
     // check for interaction
     Random &random = Random::instance();
@@ -386,12 +415,12 @@ void NeutrinoAntineutrinoInteraction::process(Candidate *candidate) const
     }
 }
 
-void NeutrinoAntineutrinoInteraction::setInteractionTag(std::string tag) {
-    interactionTag = tag;
+void NeutrinoAntineutrinoInteraction::setInteractionTag(std::string tag) const {
+    this->interactionTag = tag;
 }
 
 std::string NeutrinoAntineutrinoInteraction::getInteractionTag() const {
-    return interactionTag;
+    return this->interactionTag;
 }
 
 }

@@ -1,16 +1,29 @@
 cmake_minimum_required(VERSION 2.8.12)
 
 # Change name of the library to something meaningful!
-set(PLUGINNAME "myPlugin")
+set(PLUGINNAME "nupropa")
 project(${PLUGINNAME} C CXX)
 
 find_package(PythonInterp)
 find_package(PythonLibs)
 find_package(SWIG REQUIRED)
 
-# get information on crpropa
-execute_process(COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/findCRPropa.py" swig_interface OUTPUT_VARIABLE crpropaSwigPath)
-execute_process(COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/findCRPropa.py" install_prefix OUTPUT_VARIABLE crpropaInstallPrefix)
+# require C++11
+# Note: CRPropa requires C++11
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+
+# SWIG options
+option(ENABLE_SWIG_BUILTIN "Use SWIG builtin option" OFF) 
+set(crpropaSwigFile "crpropa.i")
+set(swigModeFlag "")
+if(ENABLE_SWIG_BUILTIN)
+  set(crpropaSwigFile "crpropa-builtin.i")
+  set(swigModeFlag "-builtin")
+endif(ENABLE_SWIG_BUILTIN)
+
+# get information on crpropa, maybe  CRPROPA_SWIG_PATH and CRPROPA_INSTALL_PREFIX work
+execute_process(COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/python/findCRPropa.py" swig_interface OUTPUT_VARIABLE crpropaSwigPath)
+execute_process(COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/python/findCRPropa.py" install_prefix OUTPUT_VARIABLE crpropaInstallPrefix)
 message(STATUS "CRPropa includes : ${crpropaInstallPrefix}")
 
 find_path(CRPROPA_SWIG_INTERFACE_FILES
@@ -32,14 +45,21 @@ message(STATUS "CRPropa lib: ${CRPROPA_LIB}")
 # swig plugin
 set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${PLUGINNAME}_wrap.cxx PROPERTIES GENERATED true )
 add_custom_command( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINNAME}_wrap.cxx
-  COMMAND swig -builtin -c++ -python ${PY3} -I${CRPROPA_SWIG_INTERFACE_FILES} -I${CRPROPA_INCLUDES} -I${CMAKE_SOURCE_DIR}/include -I${PYTHON_INCLUDE_DIRS} ${CRPROPA_SWIG_DEFINES} -dirprot -o ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINNAME}_wrap.cxx -outdir ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${PLUGINNAME}.i)
+  COMMAND swig -builtin -c++ -python ${PY3} -I${CRPROPA_SWIG_INTERFACE_FILES} -I${CRPROPA_INCLUDES} -I${CMAKE_SOURCE_DIR}/include -I${PYTHON_INCLUDE_DIRS} ${CRPROPA_SWIG_DEFINES} -dirprot -o ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINNAME}_wrap.cxx -outdir ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/python/${PLUGINNAME}.i)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR}/include ${CRPROPA_INCLUDES} ${PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
 
-# build interface and source in one library, add more .cc
+# build interface and source in one library, add more .cc... MODULE
 add_library(${PLUGINNAME} MODULE 
   ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINNAME}_wrap.cxx
-  ${CMAKE_CURRENT_SOURCE_DIR}/${PLUGINNAME}.cc)
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoNeutrinoInteraction.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoAntineutrinoInteraction.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Channels.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoBackground.cc
+)
+
+# /Applications/CRPropa/NuNuInteractionv1/CRPropa3/libs/kiss
+include_directories(include ${crpropaInstallPrefix}/libs/kiss)
 
 target_link_libraries(${PLUGINNAME} ${CRPROPA_LIB} ${PYTHON_LIBRARIES})
 
