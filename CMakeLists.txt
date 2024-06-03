@@ -49,11 +49,12 @@ add_custom_command( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINNAME}_wrap.cxx
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR}/include ${CRPROPA_INCLUDES} ${PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
 
-# build interface and source in one library, add more .cc... MODULE
+# build interface and source in one library, add more .cc...
 add_library(${PLUGINNAME} MODULE 
   ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINNAME}_wrap.cxx
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoNeutrinoInteraction.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoAntineutrinoInteraction.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoPhotonInteraction.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Channels.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoBackground.cc
 )

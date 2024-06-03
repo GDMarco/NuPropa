@@ -29,6 +29,7 @@
 #include "CRPropa.h"
 #include "nupropa/NeutrinoNeutrinoInteraction.h"
 #include "nupropa/NeutrinoAntineutrinoInteraction.h"
+#include "nupropa/NeutrinoPhotonInteraction.h"
 #include "nupropa/Channels.h"
 #include "nupropa/NeutrinoBackground.h"
 
@@ -51,6 +52,7 @@ using namespace nupropa;
 /* include plugin parts to generate wrappers for */
 %include "nupropa/NeutrinoNeutrinoInteraction.h"
 %include "nupropa/NeutrinoAntineutrinoInteraction.h"
+%include "nupropa/NeutrinoPhotonInteraction.h"
 %include "nupropa/Channels.h"
 #include "nupropa/NeutrinoBackground.h"
 
