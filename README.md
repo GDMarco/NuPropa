@@ -1,2 +1,2 @@
 # NeutrinoNeutrinoInteraction
-CRPropa code plugin to implement the interactions between neutrinos.
+CRPropa plugin to implement the interactions between neutrinos in the code.
