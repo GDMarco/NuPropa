@@ -1,6 +1,10 @@
 #include "nupropa/NeutrinoPhotonInteraction.h"
-#include "crpropa/Units.h"
-#include "crpropa/Random.h"
+#include "nupropa/NeutrinoBackground.h"
+#include <crpropa/Units.h>
+#include <crpropa/Random.h>
+#include <crpropa/Referenced.h>
+#include <crpropa/Module.h>
+#include <crpropa/Candidate.h>
 
 #include <string>
 #include <fstream>
@@ -8,7 +12,9 @@
 #include <stdexcept>
 #include <filesystem>
 
-namespace crpropa {
+namespace nupropa {
+
+using namespace crpropa;
 
 // The parent's constructor need to be called on initialization!
 NeutrinoPhotonInteraction::NeutrinoPhotonInteraction(ref_ptr<PhotonField> photonField, bool haveSecondaries,  double limit) : Module() { //double thinning,
@@ -46,7 +52,9 @@ void NeutrinoPhotonInteraction::initRate(std::string fname) {
     tabRate.clear();
     
     std::unordered_map<int, std::string> dictionaryNeutrino;
-    std::__fs::filesystem::path dir = getDataPath(getDataPath("") + "data/NeutrinoPhotonInteraction/"); // to check!
+    std::__fs::filesystem::path dir = "/Applications/CRPropa/NuGammaInteraction/CRPropa3-data/data/NeutrinoInteractions/NeutrinoPhotonInteraction/";
+    //getDataPath(getDataPath("") + "data/NeutrinoPhotonInteraction/"); // to check!
+    
     int index = 0;
     
     for (auto const& dir_entry : std::__fs::filesystem::directory_iterator{dir}) {
@@ -75,9 +83,8 @@ void NeutrinoPhotonInteraction::initRate(std::string fname) {
         
         this->tabEnergy.push_back(vecEnergy);
         this->tabRate.push_back(vecRate);
-        
-        std::unordered_map<int, std::string> dictionaryNeutrino;
-        dictionaryNeutrino[index] = dir_entry.path().string();
+
+        dictionaryNeutrino[index] = dir_entry.path().filename().string();
         index = index + 1;
     }
     this->dictionaryNeutrino = dictionaryNeutrino;
@@ -118,11 +125,11 @@ void NeutrinoPhotonInteraction::performInteraction(Candidate *candidate) const {
 std::vector<double> NeutrinoPhotonInteraction::getTabulatedEnergy(int ID) const {
     
     int indexInteraction;
-    
+
     if (abs(ID) == 12) {
         std::string interaction = "NeutrinoElectronPhotonInteraction";
         for (const auto& pair : this->dictionaryNeutrino) {
-                if (pair.second == interaction) {
+            if (pair.second == interaction) {
                     indexInteraction = pair.first;
                     break;
                 }
@@ -135,14 +142,16 @@ std::vector<double> NeutrinoPhotonInteraction::getTabulatedEnergy(int ID) const 
                     break;
                 }
         }
-    } else {
+    } else if (abs(ID) == 16) {
         std::string interaction = "NeutrinoTauPhotonInteraction";
         for (const auto& pair : this->dictionaryNeutrino) {
-                if (pair.second == interaction) {
-                    indexInteraction = pair.first;
-                    break;
-                }
+            if (pair.second == interaction) {
+                indexInteraction = pair.first;
+                break;
+            }
         }
+    } else {
+        throw std::runtime_error("Invalid ID: tables not found!");
     }
     return this->tabEnergy[indexInteraction];
 }
@@ -167,14 +176,16 @@ std::vector<double> NeutrinoPhotonInteraction::getTabulatedRate(int ID) const {
                     break;
                 }
             }
-    } else {
+    } else if (abs(ID) == 16) {
         std::string interaction = "NeutrinoTauPhotonInteraction";
         for (const auto& pair : this->dictionaryNeutrino) {
-                if (pair.second == interaction) {
-                    indexInteraction = pair.first;
-                    break;
-                }
+            if (pair.second == interaction) {
+                indexInteraction = pair.first;
+                break;
             }
+        }
+    } else {
+        throw std::runtime_error("Invalid ID: tables not found!");
     }
     return this->tabRate[indexInteraction];
 }
@@ -194,7 +205,7 @@ void NeutrinoPhotonInteraction::process(Candidate *candidate) const
    
     std::vector<double> tabEnergy = getTabulatedEnergy(ID);
     std::vector<double> tabRate = getTabulatedRate(ID);
-
+    
     // check if in tabulated energy range
     if (E < tabEnergy.front() or (E > tabEnergy.back()))
         return;
@@ -224,4 +235,4 @@ std::string NeutrinoPhotonInteraction::getInteractionTag() const {
     return interactionTag;
 }
 
-} // end namespace crpropa
+} // end namespace nupropa

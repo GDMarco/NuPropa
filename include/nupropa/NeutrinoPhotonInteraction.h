@@ -1,19 +1,19 @@
-/// Example plugin for CRPropa.
-///
-/// Please consider sharing the awesome plugin with you fellow researchers by
-/// creating a eperate repository for your project. We maintain a list of
-/// plugins to CRPropa on our webpage and are happy to add a link to your
-/// project, just send us: (name of the plugin, short description, url)
+#include <crpropa/Units.h>
+#include <crpropa/Random.h>
+#include <crpropa/Referenced.h>
+#include <crpropa/Module.h>
+#include <crpropa/Candidate.h>
+#include <crpropa/PhotonBackground.h>
+
 #include <fstream>
 #include <cmath>
 #include <unordered_map>
 
-#include <crpropa/Module.h>
-#include "crpropa/PhotonBackground.h"
-
-namespace crpropa {
+namespace nupropa {
 /// A custom C++ module for Neutrino-Photon Interaction in astrophysical scenarios. On-shell production of the W boson.
 ///
+using namespace crpropa;
+
 class NeutrinoPhotonInteraction : public Module {
 private:
     ref_ptr<PhotonField> photonField;
@@ -70,6 +70,6 @@ public:
     void performInteraction(Candidate *candidate) const;
 };
 
-} // end namespace crpropa
+} // end namespace nupropa
 
 
