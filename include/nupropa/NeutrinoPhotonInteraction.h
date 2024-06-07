@@ -1,3 +1,6 @@
+#ifndef NUPROPA_NEUTRINOPHOTONINTERACTION_H
+#define NUPROPA_NEUTRINOPHOTONINTERACTION_H
+
 #include <crpropa/Units.h>
 #include <crpropa/Random.h>
 #include <crpropa/Referenced.h>
@@ -72,4 +75,4 @@ public:
 
 } // end namespace nupropa
 
-
+#endif

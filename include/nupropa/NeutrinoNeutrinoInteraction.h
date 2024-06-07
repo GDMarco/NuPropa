@@ -1,5 +1,5 @@
-#ifndef NEUTRINONEUTRINOINTERACTION_H
-#define NEUTRINONEUTRINOINTERACTION_H
+#ifndef NUPROPA_NEUTRINONEUTRINOINTERACTION_H
+#define NUPROPA_NEUTRINONEUTRINOINTERACTION_H
 
 #include <crpropa/Module.h>
 #include "nupropa/NeutrinoBackground.h"
@@ -18,11 +18,11 @@ class NeutrinoNeutrinoInteraction : public Module
 private:
     
     ref_ptr<NeutrinoField> neutrinoField;
-    int neutrinoFieldID = 12; // check the initialization!
     bool haveSecondaries;
     double limit;
     std::string interactionTag = "NuNuI";
     
+    int neutrinoFieldID; // check the initialization!
     std::vector<std::vector<double>> tabEnergy; // 4 columns table depending on the neutrino flavour and number, in initRate they should be built properly
     std::vector<std::vector<double>> tabRate;
     

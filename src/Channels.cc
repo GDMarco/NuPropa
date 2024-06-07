@@ -1,4 +1,5 @@
 #include "nupropa/Channels.h"
+#include <crpropa/Referenced.h>
 
 #include <vector>
 #include <string>
@@ -8,6 +9,8 @@
 namespace nupropa {
 
 using namespace crpropa;
+
+Channels::Channels() {};
 
 Channels::Channels(std::vector<std::string> interactionChannels, std::vector<std::vector<int>> productsID, std::vector<bool> active, std::string interactionFolderPath) {
     
@@ -38,7 +41,7 @@ void Channels::setInteractionChannels(std::vector<std::string> interactionChanne
     this->interactionChannels = interactionChannels;
 }
 
-std::vector<std::string> Channels::readInteractionChannels(std::string interactionFolderPath) {
+void Channels::readInteractionChannels(std::string interactionFolderPath) {
     
     std::__fs::filesystem::path dir = interactionFolderPath;
     std::vector<std::string> interactionChannels;
@@ -47,16 +50,17 @@ std::vector<std::string> Channels::readInteractionChannels(std::string interacti
         interactionChannels.push_back(dir_entry.path().string());
     }
     
-    return interactionChannels;
+    this->interactionChannels = interactionChannels;
 }
 
-std::vector<std::vector<int>> Channels::readProductsID(std::string interactionFolderPath) {
+void Channels::readProductsID(std::string interactionFolderPath) {
     std::__fs::filesystem::path dir = interactionFolderPath;
     std::vector<std::string> interactionChannels;
+    std::vector<std::vector<int>> productsID;
     
     for (auto const& dir_entry : std::__fs::filesystem::directory_iterator{dir}) {
         
-        std::string filePath = interactionFolderPath + dir_entry.path().string() + "products.txt"; // to check if correct!
+        std::string filePath = dir_entry.path().string() + "/products.txt"; // to check if correct!
         
         // open a productsID.txt file and read the ID numbers
         std::ifstream infile(filePath.c_str());
@@ -72,7 +76,12 @@ std::vector<std::vector<int>> Channels::readProductsID(std::string interactionFo
         infile.close();
         productsID.push_back(vecIDs);
     }
-    return productsID;
+    this->productsID = productsID;
+}
+
+void Channels::activeAll() {
+    std::vector<bool> activeAll(this->interactionChannels.size(), true);
+    this->active = activeAll;
 }
 
 void Channels::setChannelsActive(std::vector<bool> active) {

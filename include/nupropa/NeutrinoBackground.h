@@ -1,5 +1,5 @@
-#ifndef NEUTRINOBACKGROUND_H
-#define NEUTRINOBACKGROUND_H
+#ifndef NUPROPA_NEUTRINOBACKGROUND_H
+#define NUPROPA_NEUTRINOBACKGROUND_H
 
 #include <crpropa/Common.h>
 #include <crpropa/Referenced.h>
@@ -204,8 +204,6 @@ public:
     CnuxBt() : BlackbodyNeutrinoField("CnuxBt", 1.93, -16) {}
 };
 
+} // namespace nupropa
 
-
-} // namespace crpropa
-
-#endif // CRPROPA_NEUTRINOBACKGROUND_H
+#endif // NUPROPA_NEUTRINOBACKGROUND_H

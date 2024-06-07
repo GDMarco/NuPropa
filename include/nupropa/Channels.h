@@ -1,5 +1,5 @@
-#ifndef CHANNELS_H
-#define CHANNELS_H
+#ifndef NUPROPA_CHANNELS_H
+#define NUPROPA_CHANNELS_H
 
 #include <crpropa/Referenced.h>
 #include <vector>
@@ -22,6 +22,8 @@ private:
     
 public:
 // enum C++
+    Channels();
+    
     Channels(std::vector<std::string> interactionChannels, std::vector<std::vector<int>> productsID, std::vector<bool> active, std::string interactionFolderPath);
     
     std::vector<std::string> getInteractionChannels() const{
@@ -39,9 +41,9 @@ public:
     };
     int getChannelIndex(std::string interactioChannel) const;
     
-    std::vector<std::string> readInteractionChannels(std::string interactionFolder);
-    std::vector<std::vector<int>> readProductsID(std::string interactionFolder);
-    
+    void readInteractionChannels(std::string interactionFolder);
+    void readProductsID(std::string interactionFolder);
+    void activeAll();
     
     void setInteractionChannels(std::vector<std::string> interactionChannels);
     void setChannelsActive(std::vector<bool> active);

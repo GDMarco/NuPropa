@@ -54,7 +54,7 @@ using namespace nupropa;
 %include "nupropa/NeutrinoAntineutrinoInteraction.h"
 %include "nupropa/NeutrinoPhotonInteraction.h"
 %include "nupropa/Channels.h"
-#include "nupropa/NeutrinoBackground.h"
+%include "nupropa/NeutrinoBackground.h"
 
 
 
