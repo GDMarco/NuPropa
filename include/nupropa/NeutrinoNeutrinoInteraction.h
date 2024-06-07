@@ -4,6 +4,11 @@
 #include <crpropa/Module.h>
 #include "nupropa/NeutrinoBackground.h"
 
+#include <string>
+#include <fstream>
+#include <limits>
+#include <stdexcept>
+
 namespace nupropa {
 
 using namespace crpropa;
@@ -27,7 +32,7 @@ private:
     
 public:
     /// The parent's constructor need to be called on initialization!
-    NeutrinoNeutrinoInteraction(ref_ptr<NeutrinoField>, bool haveSecondaries = false, double limit = 0.1);
+    NeutrinoNeutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, bool haveSecondaries = false, double limit = 0.1);
     
     // set the target neutrino field
     void setNeutrinoField(ref_ptr<NeutrinoField> neutrinoField);

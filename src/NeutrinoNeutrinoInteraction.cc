@@ -5,6 +5,8 @@
 
 #include <string>
 #include <fstream>
+#include <limits>
+#include <stdexcept>
 
 namespace nupropa {
 
@@ -168,5 +170,5 @@ std::string NeutrinoNeutrinoInteraction::getInteractionTag() const {
     return interactionTag;
 }
 
-} // end namespace crpropa
+} // end namespace nupropa
 
