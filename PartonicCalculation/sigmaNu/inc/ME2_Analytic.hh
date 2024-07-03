@@ -7,6 +7,8 @@
 // Declaration of all ME2 functions
 namespace ME2_Analytic {
 
+    extern double eeB0g0NCM(int i1, int i2, int i3, int i4, KinematicData &Kin, int f1, int f2);
+
     //////////////////////////////////////////////////////////
     //// (anti)neutrino + [anti]neutrino scattering results //
     //////////////////////////////////////////////////////////
@@ -25,9 +27,9 @@ namespace ME2_Analytic {
 
 
     // nu1 + nu1bar > l1 + l1bar
-    extern double nu1nu1bar_l1l1bar(int i1, int i2, int i3, int i4, KinematicData &Kin, int f1, int f2);
+    extern double nu1nu1bar_l1l1bar(int i1, int i2, int i3, int i4, KinematicData &Kin, int f);
     // nu1 + nu2bar > l1 + l2bar
-    extern double nu1nu2bar_l1l2bar(int i1, int i2, int i3, int i4, KinematicData &Kin, int f1, int f2);
+    extern double nu1nu2bar_l1l2bar(int i1, int i2, int i3, int i4, KinematicData &Kin);
 
     ////////////////////////////////////////////////
     // (anti)neutrino + photon scattering results //
@@ -43,10 +45,10 @@ namespace ME2_Analytic {
     // Charged Current exchange
 
     // nu + photon > nu + f fbar [fermion line can be quarks or charged leptons]
-    extern double nu1gamma_l1qqbar(int i1, int i2, int i3, int i4, int i5, KinematicData &Kin, int f1, int f2);
+    extern double nu1gamma_l1qqbar(int i1, int i2, int i3, int i4, int i5, KinematicData &Kin);
 
     // nu1 + photon > l1 + nul + lx [different flavour leptons]
-    extern double nu1gamma_l1nu2l2x(int i1, int i2, int i3, int i4, int i5, KinematicData &Kin, int f1, int f2);
+    extern double nu1gamma_l1nu2l2x(int i1, int i2, int i3, int i4, int i5, KinematicData &Kin);
 
 
     // nu1 + photon > l1 + nul1 + l1x [same flavour leptons]

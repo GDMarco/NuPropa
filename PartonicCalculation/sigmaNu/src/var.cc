@@ -17,7 +17,7 @@ using namespace Variables;
 // Process map for internal processes and recola interface
 std::map<int,std::string> Variables::process_map, Variables::process_map_rcl;
 // Channel selection, then PDG of the neutrino projectile and outgoing fermion line (via particle 4)
-int Variables::channel, Variables::pdg_projectile, Variables::pdg_fermion;
+int Variables::channel, Variables::pdg_projectile;
 // Recola interface
 bool Variables::active_recola;
 // Some integration options (cuba dimensions, treatment of resonances)
@@ -174,8 +174,8 @@ void Variables::init_recola(){
 	Recola::set_pole_mass_bottom_rcl(mb,0.0);
 	Recola::set_pole_mass_charm_rcl(mc,0.0);
 	Recola::set_pole_mass_strange_rcl(ms);
-	Recola::set_pole_mass_strange_rcl(0.0);
-	Recola::set_pole_mass_strange_rcl(0.0);
+	Recola::set_pole_mass_down_rcl(md);
+	Recola::set_pole_mass_up_rcl(mu);
 	// When to ignore fermion masses
 	Recola::set_light_fermions_rcl(0.5*me);
 
@@ -194,72 +194,104 @@ void Variables::init_channels(){
 	// 2to2 processes //
 	////////////////////
 
-	// All neutrino scattering (8 channels)
+	// All neutrino scattering (9 channels)
+	// All mass independent (so independent of flavour/mass)
 	// same flavour channels
 	// 1) nu1 + nu1 > nu1 + nu1
-	process_map.emplace( 1, "nu_1 nu_1 -> nu_1 nu_1");
+	process_map.emplace( 1, "nu_e nu_e -> nu_e nu_e");
 	// 2) nu1 + nu1bar > nu1 + nu1bar
-	process_map.emplace( 2, "nu_1 nu_1~ -> nu_1 nu_1~");
+	process_map.emplace( 2, "nu_e nu_e~ -> nu_e nu_e~");
 	// 3) nu1bar + nu1bar > nu1bar + nu1bar
-	process_map.emplace( 3, "nu_1~ nu_1~ -> nu_1~ nu_1~");
+	process_map.emplace( 3, "nu_e~ nu_e~ -> nu_e~ nu_e~");
 	// 4) nu1bar + nu1 > nu1bar + nu1
-	process_map.emplace( 4, "nu_1~ nu_1 -> nu_1~ nu_1");
+	process_map.emplace( 4, "nu_e~ nu_e -> nu_e~ nu_e");
 	// mixed-flavour channels
 	// 5) nu1 + nu2 > nu1 + nu2
-	process_map.emplace( 5, "nu_1 nu_2 -> nu_1 nu_2");
+	process_map.emplace( 5, "nu_e nu_mu -> nu_e nu_mu");
 	// 6) nu1 + nu2bar > nu1 + nu2bar
-	process_map.emplace( 6, "nu_1 nu_2~ -> nu_1 nu_2~");
+	process_map.emplace( 6, "nu_e nu_mu~ -> nu_e nu_mu~");
 	// 7) nu1bar + nu2 > nu1bar + nu2
-	process_map.emplace( 7, "nu_1~ nu_2 -> nu_1~ nu_2");
+	process_map.emplace( 7, "nu_e~ nu_mu -> nu_e~ nu_mu");
 	// 8) nu1bar + nu2bar > nu1bar + nu2bar
-	process_map.emplace( 8, "nu_1~ nu_2 -> nu_1~ nu_2");	
+	process_map.emplace( 8, "nu_e~ nu_mu~ -> nu_e~ nu_mu~");	
 	// neutrino annihilation channels (3 channels)
 	// 9) nu1 + nu1bar > nu2 + nu2bar
 	process_map.emplace( 9, "nu_1 nu_1~ -> nu_2 nu_2~");
-	// 10) nu1 + nu1bar > l1 + l1bar (provide outgoing fermion PDG)
-	process_map.emplace( 10, "nu_1 nu_1~ -> l_1 l_1~");	
-	// 11) nu1 + nu2bar > l1 + l2bar (provide PDG1 and PDG4 [l2bar flavour])
-	process_map.emplace( 11, "nu_1 nu_2~ -> l1 l2bar");
-	// 11) nu1 + nu1bar > f + fbar (provide outoing fermion PDG)
-	process_map.emplace( 12, "nu_1 nu_1~ -> f f~");		
+	// 10-12) nu1 + nu1bar > l1 + l1bar (provide outgoing fermion PDG)
+	process_map.emplace( 10, "nu_e nu_e~ -> e- e+");
+	process_map.emplace( 11, "nu_m nu_m~ -> m- m+");
+	process_map.emplace( 12, "nu_t nu_t~ -> t- t+");
+	// 13-18) nu1 + nu2bar > l1 + l2bar 
+	process_map.emplace( 13, "nu_e nu_m~ -> e- m+");
+	process_map.emplace( 14, "nu_e nu_t~ -> e- t+");
+	process_map.emplace( 15, "nu_m nu_e~ -> m- e+");
+	process_map.emplace( 16, "nu_m nu_t~ -> m- t+");
+	process_map.emplace( 17, "nu_t nu_e~ -> t- e+");
+	process_map.emplace( 18, "nu_t nu_m~ -> t- m+");
+	// 19-24) nu1 + nu1bar > f + fbar
+	process_map.emplace( 19, "nu_1 nu_1~ -> d d~");
+	process_map.emplace( 20, "nu_1 nu_1~ -> u u~");
+	process_map.emplace( 21, "nu_1 nu_1~ -> s s~");
+	process_map.emplace( 22, "nu_1 nu_1~ -> c c~");
+	process_map.emplace( 23, "nu_1 nu_1~ -> b b~");
+	process_map.emplace( 24, "nu_1 nu_1~ -> t t~");
+	// 25-27) nu1 + nu1bar > l + lbar
+	process_map.emplace( 25, "nu_1 nu_1~ -> e- e+");
+	process_map.emplace( 26, "nu_1 nu_1~ -> mu- mu+");
+	process_map.emplace( 27, "nu_1 nu_1~ -> tau- tau+");	
 	// Onshell W processes
-	// 13) nu1 + gamma > W+ l-
-	process_map.emplace( 13, "nu_1 gamma -> W+ l_1");
-	// 14) nu1bar + gamma > W- l+
-	process_map.emplace( 14, "nu_1~ gamma -> W- l_1~");	
+	// 28-30) nu1 + gamma > W+ l-
+	process_map.emplace( 28, "nu_e gamma -> W+ e-");
+	process_map.emplace( 29, "nu_m gamma -> W+ m-");
+	process_map.emplace( 30, "nu_t gamma -> W+ t-");
+	// 31-33) nu1bar + gamma > W- l+
+	process_map.emplace( 31, "nu_e~ gamma -> W- e+");
+	process_map.emplace( 32, "nu_m~ gamma -> W- m+");
+	process_map.emplace( 33, "nu_t~ gamma -> W- t+");
+
+	// 99) e- e+ > Q Qbar [testing channel]
+	process_map.emplace( 99, "e- e+ -> c c~");	
 
 	////////////////////
 	// 2to3 processes //
 	////////////////////
 
-	// neutrino  + photon scattering NC exchanges (2 channels + c.c.)
-	// 101) nu1  + gamma > nu1 + l2 + l2bar
-	process_map.emplace( 101, "nu_1 gamma -> nu_1 l_2 l_2~");
-	// 102) nu1  + gamma > nu1 + q + qbar
-	process_map.emplace( 102, "nu_1 gamma -> nu_1 q q~");
-	// 103) nu1~ + gamma > nu1 + l2 + l2bar
-	process_map.emplace( 103, "nu_1~ gamma -> nu_1~ l~ l_2");
-	// 104) nu1~ + gamma > nu1 + q + qbar
-	process_map.emplace( 104, "nu_1~ gamma -> nu_1~ q~ q");
+	// neutrino + photon scattering NC exchanges
+	// 101-103) nu1  + gamma > nu1 + l2 + l2bar
+	process_map.emplace( 101, "nu gamma -> nu e- e+");
+	process_map.emplace( 102, "nu gamma -> nu mu- mu+");
+	process_map.emplace( 103, "nu gamma -> nu tau- tau+");
+	// 104-109) nu1 + gamma > nu1 + q + qbar
+	process_map.emplace( 104, "nu gamma -> nu d d~");
+	process_map.emplace( 105, "nu gamma -> nu u u~");
+	process_map.emplace( 106, "nu gamma -> nu s s~");
+	process_map.emplace( 107, "nu gamma -> nu c c~");
+	process_map.emplace( 108, "nu gamma -> nu b b~");
+	process_map.emplace( 109, "nu gamma -> nu t t~");
 
-	// neutrino  + photon scattering CC exchanges (2 channels + c.c.)
-	// 105) nu1  + gamma > l1 + nu2 + l2~
-	process_map.emplace( 105, "nu_1 gamma -> l_1 nu_2 l_2~");
-	// 106) nu1  + gamma > l1 + u + d~ (massless quarks)
-	process_map.emplace( 106, "nu_1 gamma -> l_1 u d~ [massless quarks]");
-	// 107) nu1~ + gamma > l1~ + nu2~ + l2
-	process_map.emplace( 107, "nu_1~ gamma -> l_1~ nu_2~ l_2");
-	// 108) nu1~ + gamma > l1~ + u~ + d (massless quarks)
-	process_map.emplace( 108, "nu_1~ gamma -> l_1~ u~ d [massless quarks]");
+	// neutrino + photon scattering CC exchanges
+	// 110-115) nu1  + gamma > l1 + nu2 + l2~ 
+	process_map.emplace( 110, "nu_e gamma -> e- nu_mu mu+");
+	process_map.emplace( 111, "nu_e gamma -> e- nu_tau tau+");
+	process_map.emplace( 112, "nu_mu gamma -> mu- nu_e e+");
+	process_map.emplace( 113, "nu_mu gamma -> mu- nu_tau tau+");
+	process_map.emplace( 114, "nu_tau gamma -> tau- nu_e e+");
+	process_map.emplace( 115, "nu_tau gamma -> tau- nu_muu mu+");
 
-	// neutrino  + photon same lepton flavour cases (1 channel + c.c.)
-	// 109) nu1  + gamma > l1 + nu1 + l1~
-	process_map.emplace( 109, "nu_1 gamma -> l_1 nu_1 l_1~");
-	// 110) nu1~ + gamma > l1~ + nu1~ + l1
-	process_map.emplace( 110, "nu_1~ gamma -> l_1~ nu_1~ l_1");
+	// neutrino + photon same lepton flavour cases (1 channel + c.c.)
+	// 116-119) nu1  + gamma > l1 + nu1 + l1~
+	process_map.emplace( 116, "nu_e gamma -> e- nu_e e+");
+	process_map.emplace( 117, "nu_mu gamma -> mu- nu_mu mu+");
+	process_map.emplace( 118, "nu_tau gamma -> tau- nu_tau tau+");		
 
-	// Implementation of the Recola channels as above
+	// .... quark channels just consider massless quarks
+	// 119-121)
+	process_map.emplace( 119, "nu_e gamma -> e- u d~");
+	process_map.emplace( 120, "nu_mu gamma -> mu- u d~");
+	process_map.emplace( 121, "nu_tau gamma -> tau- u d~");
 
+
+	// Implementation of the Recola channels as above (originally I had different str_notation)
 	// The recola map is the same as above, but with some explicit fermion names
 	// 1) nu1 + nu1 > nu1 + nu1
 	process_map_rcl.emplace( 1, "nu_e nu_e -> nu_e nu_e");
@@ -281,44 +313,284 @@ void Variables::init_channels(){
 	// neutrino annihilation channels (3 channels)
 	// 9) nu1 + nu1bar > nu2 + nu2bar
 	process_map_rcl.emplace( 9, "nu_e nu_e~ -> nu_mu nu_mu~");
-	// 10) nu1 + nu1bar > l1 + l1bar (provide outgoing fermion PDG)
-	process_map_rcl.emplace( 10, "nu_tau nu_tau~ -> tau- tau+");	
-	// 11) nu1 + nu1bar > f + fbar (provide outoing fermion PDG)
-	process_map_rcl.emplace( 11, "nu_e nu_mu~ -> e- mu+");
-	// 12) nu1 + nu2bar > l1 + l2bar (provide outoing fermion PDG)
-	process_map_rcl.emplace( 12, "nu_e nu_e~ -> c c~");
-	// 13) nu1 + gamma > W+ l-
-	process_map_rcl.emplace( 13, "nu_mu gamma -> W+ mu-");
-	// 14) nu1bar + gamma > W- l+
-	process_map_rcl.emplace( 14, "nu_mu~ gamma -> W- mu+");	
+	// 10-12) nu1 + nu1bar > l1 + l1bar (provide outgoing fermion PDG)
+	process_map_rcl.emplace( 10, "nu_e nu_e~ -> e- e+");
+	process_map_rcl.emplace( 11, "nu_mu nu_mu~ -> mu- mu+");
+	process_map_rcl.emplace( 12, "nu_tau nu_tau~ -> tau- tau+");
+	// 13-18) nu1 + nu2bar > l1 + l2bar 
+	process_map_rcl.emplace( 13, "nu_e nu_mu~ -> e- mu+");
+	process_map_rcl.emplace( 14, "nu_e nu_tau~ -> e- tau+");
+	process_map_rcl.emplace( 15, "nu_mu nu_e~ -> mu- e+");
+	process_map_rcl.emplace( 16, "nu_mu nu_tau~ -> mu- tau+");
+	process_map_rcl.emplace( 17, "nu_tau nu_e~ -> tau- e+");
+	process_map_rcl.emplace( 18, "nu_tau nu_mu~ -> tau- mu+");
+	// 19-24) nu1 + nu1bar > q + qbar
+	process_map_rcl.emplace( 19, "nu_e nu_e~ -> d d~");
+	process_map_rcl.emplace( 20, "nu_e nu_e~ -> u u~");
+	process_map_rcl.emplace( 21, "nu_e nu_e~ -> s s~");
+	process_map_rcl.emplace( 22, "nu_e nu_e~ -> c c~");
+	process_map_rcl.emplace( 23, "nu_e nu_e~ -> b b~");
+	process_map_rcl.emplace( 24, "nu_e nu_e~ -> t t~");
+	// 25-27) nu1 + nu1bar > l + lbar
+	process_map_rcl.emplace( 25, "nu_mu nu_mu~ -> e- e+");
+	process_map_rcl.emplace( 26, "nu_e nu_e~ -> mu- mu+");
+	process_map_rcl.emplace( 27, "nu_e nu_e~ -> tau- tau+");
+	// Onshell W processes
+	// 28-30) nu1 + gamma > W+ l-
+	process_map_rcl.emplace( 28, "nu_e gamma -> W+ e-");
+	process_map_rcl.emplace( 29, "nu_mu gamma -> W+ mu-");
+	process_map_rcl.emplace( 30, "nu_tau gamma -> W+ tau-");
+	// 31-33) nu1bar + gamma > W- l+
+	process_map_rcl.emplace( 31, "nu_e~ gamma -> W- e+");
+	process_map_rcl.emplace( 32, "nu_mu~ gamma -> W- mu+");
+	process_map_rcl.emplace( 33, "nu_tau~ gamma -> W- tau+");
 
-	// neutrino  + photon scattering NC exchanges (2 channels + c.c.)
-	// 101) nu1  + gamma > nu1 + l2 + l2bar
-	process_map_rcl.emplace( 101, "nu_e gamma -> nu_e mu- mu+");
-	// 102) nu1  + gamma > nu1 + q + qbar
-	process_map_rcl.emplace( 102, "nu_e gamma -> nu_e c c~");
-	// 103) nu1~ + gamma > nu1 + l2 + l2bar
-	process_map_rcl.emplace( 103, "nu_e~ gamma -> nu_e~ mu+ mu-");
-	// 104) nu1~ + gamma > nu1 + q + qbar
-	process_map_rcl.emplace( 104, "nu_e~ gamma -> nu_e~ c~ c");
+	// 99) e- e+ > Q Qbar [testing channel]
+	process_map_rcl.emplace( 99, "e- e+ -> c c~");		
 
-	// The following channels were computed only in a resonance approximation
-	// So explicitly check them vs Recola for specific fermion choices
-	// neutrino  + photon scattering CC exchanges (2 channels + c.c.)
-	// 105) nu1  + gamma > l1 + nu2 + l2~
-	process_map_rcl.emplace( 105, "nu_e gamma -> e- nu_mu mu+");
-	// 106) nu1  + gamma > l1 + u + d~ (massless quarks)
-	process_map_rcl.emplace( 106, "nu_e gamma -> e- u d~");
-	// 107) nu1~ + gamma > l1~ + nu2~ + l2
-	process_map_rcl.emplace( 107, "nu_e~ gamma -> e+ nu_mu~ mu-");
-	// 108) nu1~ + gamma > l1~ + u~ + d (massless quarks)
-	process_map_rcl.emplace( 108, "nu_e~ gamma -> e+ u~ d");
+	// neutrino + photon scattering NC exchanges
+	// 101-103) nu1  + gamma > nu1 + l2 + l2bar
+	process_map_rcl.emplace( 101, "nu_mu gamma -> nu_mu e- e+");
+	process_map_rcl.emplace( 102, "nu_e gamma -> nu_e mu- mu+");
+	process_map_rcl.emplace( 103, "nu_e gamma -> nu_e tau- tau+");
+	// 104-109) nu1 + gamma > nu1 + q + qbar
+	process_map_rcl.emplace( 104, "nu_e gamma -> nu_e d d~");
+	process_map_rcl.emplace( 105, "nu_e gamma -> nu_e u u~");
+	process_map_rcl.emplace( 106, "nu_e gamma -> nu_e s s~");
+	process_map_rcl.emplace( 107, "nu_e gamma -> nu_e c c~");
+	process_map_rcl.emplace( 108, "nu_e gamma -> nu_e b b~");
+	process_map_rcl.emplace( 109, "nu_e gamma -> nu_e t t~");
 
-	// neutrino  + photon same lepton flavour cases (1 channel + c.c.)
-	// 109) nu1  + gamma > l1 + nu1 + l1~
-	process_map_rcl.emplace( 109, "nu_mu gamma -> mu- nu_mu mu+");
-	// 110) nu1~ + gamma > l1~ + nu1~ + l1
-	process_map_rcl.emplace( 110, "nu_mu~ gamma -> mu+ nu_mu~ mu-");
+	// neutrino + photon scattering CC exchanges
+	// 110-115) nu1  + gamma > l1 + nu2 + l2~ 
+	process_map_rcl.emplace( 110, "nu_e gamma -> e- nu_mu mu+");
+	process_map_rcl.emplace( 111, "nu_e gamma -> e- nu_tau tau+");
+	process_map_rcl.emplace( 112, "nu_mu gamma -> mu- nu_e e+");
+	process_map_rcl.emplace( 113, "nu_mu gamma -> mu- nu_tau tau+");
+	process_map_rcl.emplace( 114, "nu_tau gamma -> tau- nu_e e+");
+	process_map_rcl.emplace( 115, "nu_tau gamma -> tau- nu_mu mu+");
+
+	// neutrino + photon same lepton flavour cases (1 channel + c.c.)
+	// 116-119) nu1  + gamma > l1 + nu1 + l1~
+	process_map_rcl.emplace( 116, "nu_e gamma -> e- nu_e e+");
+	process_map_rcl.emplace( 117, "nu_mu gamma -> mu- nu_mu mu+");
+	process_map_rcl.emplace( 118, "nu_tau gamma -> tau- nu_tau tau+");		
+
+	// .... quark channels just consider massless quarks
+	// 119-121) 
+	process_map_rcl.emplace( 119, "nu_e gamma -> e- u d~");
+	process_map_rcl.emplace( 120, "nu_mu gamma -> mu- u d~");
+	process_map_rcl.emplace( 121, "nu_tau gamma -> tau- u d~");
+
+}
+
+// The routine takes 
+void Variables::init_channel_information(int channel, int *pdgs, double *masses){
+
+	// For now I have not bothered to store the PDG information, just the outgoing masses
+
+	// If channel < 100 we are in a 2to2 process
+
+	// Channels 1-9 are all neutrino scattering
+	if( channel < 10 ){
+		masses[0] = 0.0; masses[1] = 0.0;
+	}
+	// process_map.emplace( 10, "nu_e nu_e~ -> e- e+");
+	if( channel == 10 ){
+		masses[0] = me; masses[1] = me;
+	}
+	// process_map.emplace( 11, "nu_m nu_m~ -> m- m+");
+	if( channel == 11 ){
+		masses[0] = mm; masses[1] = mm;
+	}
+	// process_map.emplace( 12, "nu_t nu_t~ -> t- t+");
+	if( channel == 12 ){
+		masses[0] = mtau; masses[1] = mtau;
+	}
+	// process_map.emplace( 13, "nu_e nu_m~ -> e- m+");
+	if( channel == 13 ){
+		masses[0] = me; masses[1] = mm;
+	}
+	// process_map.emplace( 14, "nu_e nu_t~ -> e- t+");
+	if( channel == 14 ){
+		masses[0] = me; masses[1] = mtau;
+	}
+	// process_map.emplace( 15, "nu_m nu_e~ -> m- e+");
+	if( channel == 15 ){
+		masses[0] = mm; masses[1] = me;
+	}
+	// process_map.emplace( 16, "nu_m nu_t~ -> m- t+");
+	if( channel == 16 ){
+		masses[0] = mm; masses[1] = mtau;
+	}
+	// process_map.emplace( 17, "nu_t nu_e~ -> t- e+");
+	if( channel == 17 ){
+		masses[0] = mtau; masses[1] = me;
+	}
+	// process_map.emplace( 18, "nu_t nu_m~ -> t- m+");
+	if( channel == 18 ){
+		masses[0] = mtau; masses[1] = mm;
+	}
+	// // 19-24) nu1 + nu1bar > f + fbar
+	// process_map.emplace( 19, "nu_1 nu_1~ -> d d~");
+	if( channel == 19 ){
+		masses[0] = md; masses[1] = md;
+	}	
+	// process_map.emplace( 20, "nu_1 nu_1~ -> u u~");
+	if( channel == 20 ){
+		masses[0] = mu; masses[1] = mu;
+	}	
+	// process_map.emplace( 21, "nu_1 nu_1~ -> s s~");
+	if( channel == 21 ){
+		masses[0] = ms; masses[1] = ms;
+	}	
+	// process_map.emplace( 22, "nu_1 nu_1~ -> c c~");
+	if( channel == 22 ){
+		masses[0] = mc; masses[1] = mc;
+	}	
+	// process_map.emplace( 23, "nu_1 nu_1~ -> b b~");
+	if( channel == 23 ){
+		masses[0] = mb; masses[1] = mb;
+	}	
+	// process_map.emplace( 24, "nu_1 nu_1~ -> t t~");
+	if( channel == 24 ){
+		masses[0] = mt; masses[1] = mt;
+	}
+	// process_map.emplace( 25, "nu_1 nu_1~ -> e- e+");
+	if( channel == 25 ){
+		masses[0] = me; masses[1] = me;
+	}	
+	// process_map.emplace( 26, "nu_1 nu_1~ -> mu- mu+");
+	if( channel == 26 ){
+		masses[0] = mm; masses[1] = mm;
+	}	
+	// process_map.emplace( 27, "nu_1 nu_1~ -> tau- tau+");
+	if( channel == 27 ){
+		masses[0] = mtau; masses[1] = mtau;
+	}
+	// // Onshell W processes
+	// // 25-27) nu1 + gamma > W+ l-
+	// process_map.emplace( 25, "nu_e gamma -> W+ e-");
+	if( channel == 28 ){
+		masses[0] = mw; masses[1] = me;
+	}	
+	// process_map.emplace( 26, "nu_m gamma -> W+ m-");
+	if( channel == 29 ){
+		masses[0] = mw; masses[1] = mm;
+	}	
+	// process_map.emplace( 27, "nu_t gamma -> W+ t-");
+	if( channel == 30 ){
+		masses[0] = mw; masses[1] = mtau;
+	}	
+	// // 28-30) nu1bar + gamma > W- l+
+	// process_map.emplace( 28, "nu_e~ gamma -> W- e+");
+	if( channel == 31 ){
+		masses[0] = mw; masses[1] = me;
+	}	
+	// process_map.emplace( 29, "nu_m~ gamma -> W- m+");
+	if( channel == 32 ){
+		masses[0] = mw; masses[1] = mm;
+	}	
+	// process_map.emplace( 30, "nu_t~ gamma -> W- t+");
+	if( channel == 33 ){
+		masses[0] = mw; masses[1] = mtau;
+	}
+
+	// debugging channel
+	if( channel == 99 ){
+		masses[0] = mc; masses[1] = mc;
+	}	
+
+
+	// 2to3 processes
+
+	// process_map.emplace( 101, "nu gamma -> nu e- e+");
+	if( channel == 101 ){
+		masses[0] = 0.0; masses[1] = me; masses[2] = me;
+	}	
+	// process_map.emplace( 102, "nu gamma -> nu mu- mu+");
+	if( channel == 102 ){
+		masses[0] = 0.0; masses[1] = mm; masses[2] = mm;
+	}	
+	// process_map.emplace( 103, "nu gamma -> nu tau- tau+");
+	if( channel == 103 ){
+		masses[0] = 0.0; masses[1] = mtau; masses[2] = mtau;
+	}	
+	// process_map.emplace( 104, "nu gamma -> nu d d~");
+	if( channel == 104 ){
+		masses[0] = 0.0; masses[1] = md; masses[2] = md;
+	}	
+	// process_map.emplace( 105, "nu gamma -> nu u u~");
+	if( channel == 105 ){
+		masses[0] = 0.0; masses[1] = mu; masses[2] = mu;
+	}	
+	// process_map.emplace( 106, "nu gamma -> nu s s~");
+	if( channel == 106 ){
+		masses[0] = 0.0; masses[1] = ms; masses[2] = ms;
+	}	
+	// process_map.emplace( 107, "nu gamma -> nu c c~");
+	if( channel == 107 ){
+		masses[0] = 0.0; masses[1] = mc; masses[2] = mc;
+	}	
+	// process_map.emplace( 108, "nu gamma -> nu b b~");
+	if( channel == 108 ){
+		masses[0] = 0.0; masses[1] = mb; masses[2] = mb;
+	}	
+	// process_map.emplace( 109, "nu gamma -> nu t t~");
+	if( channel == 109 ){
+		masses[0] = 0.0; masses[1] = mt; masses[2] = mt;
+	}
+
+	// process_map.emplace( 110, "nu_e gamma -> e- nu_mu mu+");
+	if( channel == 110 ){
+		masses[0] = me; masses[1] = 0.0; masses[2] = mm;
+	}	
+	// process_map.emplace( 111, "nu_e gamma -> e- nu_tau tau+");
+	if( channel == 111 ){
+		masses[0] = me; masses[1] = 0.0; masses[2] = mtau;
+	}	
+	// process_map.emplace( 112, "nu_mu gamma -> mu- nu_e e+");
+	if( channel == 112 ){
+		masses[0] = mm; masses[1] = 0.0; masses[2] = me;
+	}	
+	// process_map.emplace( 113, "nu_mu gamma -> mu- nu_tau tau+");
+	if( channel == 113 ){
+		masses[0] = mm; masses[1] = 0.0; masses[2] = mtau;
+	}	
+	// process_map.emplace( 114, "nu_tau gamma -> tau- nu_e e+");
+	if( channel == 114 ){
+		masses[0] = mtau; masses[1] = 0.0; masses[2] = me;
+	}	
+	// process_map.emplace( 115, "nu_tau gamma -> tau- nu_mu mu+");
+	if( channel == 115 ){
+		masses[0] = mtau; masses[1] = 0.0; masses[2] = mm;
+	}
+
+	// process_map.emplace( 116, "nu_e gamma -> e- nu_e e+");
+	if( channel == 116 ){
+		masses[0] = me; masses[1] = 0.0; masses[2] = me;
+	}	
+	// process_map.emplace( 117, "nu_mu gamma -> mu- nu_mu mu+");
+	if( channel == 117 ){
+		masses[0] = mm; masses[1] = 0.0; masses[2] = mm;
+	}	
+	// process_map.emplace( 118, "nu_tau gamma -> tau- nu_tau tau+");		
+	if( channel == 118 ){
+		masses[0] = mtau; masses[1] = 0.0; masses[2] = mtau;
+	}
+
+	// process_map.emplace( 119, "nu_e gamma -> e- u d~");
+	if( channel == 119 ){
+		masses[0] = me; masses[1] = mu; masses[2] = md;
+	}	
+	// process_map.emplace( 120, "nu_mu gamma -> mu- u d~");
+	if( channel == 120 ){
+		masses[0] = mm; masses[1] = mu; masses[2] = md;
+	}	
+	// process_map.emplace( 121, "nu_tau gamma -> tau- u d~");
+	if( channel == 121 ){
+		masses[0] = mtau; masses[1] = mu; masses[2] = md;
+	}
 
 }
 

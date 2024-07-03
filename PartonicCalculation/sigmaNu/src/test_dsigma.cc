@@ -29,29 +29,27 @@ int grid_cache = 2;
 void print_usage() {
 	cout << endl
 		<< "Usage, dSigma:" << endl
-		<< " -s --seed			<s>		seed number for integration\n"
-		<< " -o --iobs			<o>		potentially if we consider some specific observeables or channel?\n"
-		// Then the PDG of particles 1,2,3,4
-		<< " -p --pdg_1			<p>		pdg of (anti)neutrino projecile\n" 
-		<< " -f --pdg_4			<f>		pdg of fermion 4, fixes masses, couplings etc.\n"
-		<< " -c --chan			<c>		channel selection\n"
+		<< " -s --seed			<s>	seed number for integration\n"
+		<< " -a --iobs			<a>	(0 = fixed Ecms, 1 = Ecms scan)\n"
+		<< " -n --pdg_nu		<n>	pdg of (anti)neutrino projecile\n" 
+		<< " -c --chan			<c>	channel selection\n"
+		<< " -v --virt		  <v> virtual option for channels 1-9\n"
+		<< " -h --help			<h> print available channels "
 		<< endl;
-	// Supported channels
-	print_channels();
 	exit(0);
 	return;
 }
 
 // Introduce a more user friendly interface
-void read_arguments(int argc, char* argv[], int &seed, int &iobs, int &ichan, int &flav_1, int &flav_4) {
+void read_arguments(int argc, char* argv[], int &seed, int &analysis, int &ichan, int &flav_nu, bool &virt) {
 	// provide it length 4 integer array for PDG codes (these must all be entered)
-	const char* const short_options = "s:o:p:f:c:";
+	const char* const short_options = "s:a:n:c:v:h:";
 	const struct option long_options[] = { { "help", 0, NULL, 'h' },
 		   { "seed", 1, NULL,  's' },
-		   { "iobs", 1, NULL,  'o' },
-		   { "pdg_1",1, NULL,  'p' },
-		   { "pdg_4",1, NULL,  'f' },
+		   { "analysis", 1, NULL,  'a' },
+		   { "pdg_nu",1, NULL, 'n' },
 		   { "chan", 1, NULL,  'c' },
+		   { "virt", 1, NULL,  'v' },		   
 		   { NULL, 0, NULL, 0 } };
 	int next_option;
 	do {
@@ -60,18 +58,21 @@ void read_arguments(int argc, char* argv[], int &seed, int &iobs, int &ichan, in
 			case 's':
 				seed = stoi(optarg, NULL);
 				break;						
-			case 'o':
-				iobs = stoi(optarg, NULL);
+			case 'a':
+				analysis = stoi(optarg, NULL);
 				break;
 			case 'c':
 				ichan = stoi(optarg, NULL);
 				break;				
-			case 'p':
-				flav_1 = stoi(optarg, NULL);
+			case 'n':
+				flav_nu = stoi(optarg, NULL);
 				break;
-			case 'f':
-				flav_4 = stoi(optarg, NULL);
-				break;															
+			case 'v':
+				virt = stoi(optarg, NULL);
+				break;
+			case 'h':
+				print_channels();
+				abort();																
 			case '?':
 				print_usage();
 			case -1: break;
@@ -99,58 +100,18 @@ int Vegas_Interface(const int *ndim, const cubareal xx[],
 
 	// Create array of masses of final state particles
 	double masses[nfinal] = {0.};
+	int pdgs[nfinal] = {0};
 
-	// For two-to-two scattering set the outgoing fermion mass if relevant
-	if( nfinal == 2 ){
-		double m_fermion = get_mass_fermion_pdg( pdg_fermion );
-		masses[0] = m_fermion;
-		masses[1] = m_fermion;
+	// Hardcode a void function for the final state particles, pass by ref
+	init_channel_information( channel, pdgs, masses );
 
-		// Special cases
-		//channel 12: nu1 + nu2bar > l1 l2bar
-		if( channel == 11 ){
-			// Find mass of l1 from correlation with the neutrino projectile
-			masses[0] = get_mass_fermion_pdg( abs(pdg_projectile)-1 );
-		}
-		//channels 13,14: nu + gamma > W l
-		else if( channel == 13 or channel == 14 ){
-			masses[0] = mw;
-			masses[1] = m_fermion;
-		}
-	}
-
-	// Assign masses based channel selection
-	// For now fix to muon mass
-	if( nfinal == 3 ){
-		// Collect the mass information on the outgoing fermion
-		double m_fermion = get_mass_fermion_pdg( pdg_fermion );
-
-		// The channel break down is:
-		// 101-105: nu gamma > neutrino f fbar [NC type]
-		if( channel < 105 ){
-			masses[0] = 0.0;
-			masses[1] = m_fermion;
-			masses[2] = m_fermion;
-		}
-		// 105+: nu gamma > lepton f f'~ [where f,f' may be quarks or leptons]
-		// if f f'~ are quarks, ignore masses
-		// if f f~ are leptons, include charged lepton mass effects
-		else{
-			// Get the mass of lepton particle 3 (it is correlated with the incoming neutrino flavour)
-			// Particle 3 = the charged lepton mass correlated with initial neutrino flavour
-			double m_3 = get_mass_fermion_pdg( abs(pdg_projectile)-1 );
-			// If particle 4,5 are quarks ignore masses
-			double m_4 = 0.0;
-			double m_5 = 0.0;
-			// If particle 4 is a neutrino, include charged lepton mass
-			if( is_neutrino( pdg_fermion) ){
-				// e.g. electron neutrino (pdg = 12), electron (pdg = 11)
-				m_5 = get_mass_fermion_pdg( abs(pdg_fermion)-1 );
-			}
-			masses[0] = m_3;
-			masses[1] = m_4;
-			masses[2] = m_5;
-		}
+	// Sanity check on threshold of final-state particles
+	double mfinal(0.);
+	for( int i(0); i < nfinal; i++)
+		mfinal += masses[i];
+	if( pow(mfinal,2) > Ecms2 ){
+		ff[0] = 0.0;
+		return 0;
 	}
 
 	// Create phase-space
@@ -158,16 +119,14 @@ int Vegas_Interface(const int *ndim, const cubareal xx[],
 	// Manually set as(muR) currently not used
 	Kin.set_as_mur( 0.118 );
 
-
 	// New function ordered by channels (integers)
 	dsigma_summed = dsigma_channels( Kin, channel );
 
+	// abort();
 	// Return the (integrand) differential cross-section in pb
 	ff[0] = dsigma_summed * hbarc2;
 	return 0;
 }
-
-
 
 // This is the main program, i.e. the one which is run by the executable
 // we can supply it with some inputs at command line (lets just use integers)
@@ -176,13 +135,12 @@ int main(int argc, char *argv[])
 	// Initialise the channels
 	init_channels();
 	if( argc < 2 ) print_usage();
+
   // Initialise program defaults
 	init_default();
 	// Some default values
 	channel = 1;
 	pdg_projectile = 12;
-	pdg_fermion = 12;
-
   // Initialise some process specific scales/variables
 	scale_opt = -1;
 	// Scale options
@@ -190,7 +148,6 @@ int main(int argc, char *argv[])
 	muf_var = 1.;	
   mu0 = mz;
 	mu_loop = 100.;	// No results depend on mu_reg value
-
 	// Set the collision environment (pp collisions at LHC 13 TeV)
 	Ecms = 100.0;
 	Ecms2 = pow(Ecms,2);
@@ -201,7 +158,12 @@ int main(int argc, char *argv[])
 	print_channels();
 
 	// Now read the specific set of command line arguments
-	read_arguments(argc,argv,seed_cache,isetup,channel,pdg_projectile,pdg_fermion);	
+	read_arguments(argc,argv,seed_cache,isetup,channel,pdg_projectile,active_virtual);	
+
+	if( active_virtual and channel >= 10 ){
+		cout << "Virtual should only be active for channels 1-9\n";
+		abort();
+	}
 
 	// Update cuba dimensions according to the process
 	update_process_dimensions();
@@ -226,7 +188,6 @@ int main(int argc, char *argv[])
 		cout << "Inclusive cross-section for an energy scan in Ecms\n";
 	}
 
-
 	///////////////////////////
 	// Information for Vegas //
 	///////////////////////////	
@@ -247,17 +208,25 @@ int main(int argc, char *argv[])
 	//////////////////////////////
 	const std::string s_analysis[2] = {"SigmaIncl","SigmaIncl_Ecms"};
   string outfile = s_analysis[isetup]+"_channel"+to_string(channel);
+  // If active virtual, add NLO tag to file
+  if( active_virtual ) outfile = outfile +"_virt";
   ofstream ofile_results;
   // open file
   ofile_results.open(outfile+"_s"+to_string(seed_cache)+".txt");
   // save general program settings
 	write_settings(ofile_results,"");
 
+	// Also write the scattering process
+	ofile_results << endl << "# channel_id = " << channel << endl;
+	ofile_results << " active_virtual = " << active_virtual << endl;
+	ofile_results << "# process  = " << process_map.at(channel) << endl;
+
 	/////////////////
 	// Start timer //
 	/////////////////	
   struct timeval t0, t1;
   gettimeofday(&t0,NULL);
+
 
   // Fiducial results for isetup < 3
   if( isetup == 0 ){
@@ -279,8 +248,19 @@ int main(int argc, char *argv[])
 	if( isetup == 1 ){
 
 		// Either derive Ecms for a varying Enu, or directly fix Ecms
-		double Ecms_low = 10.0;
-		double Ecms_high = 1e5;
+
+		// eV > GeV: 10^9
+
+		// Scatter from 2 * electron mass threshold
+		// So 2 me = 1e-3 GeV = 1 MeV = 10^6 eV
+		// low: Ecms2 ~ 1e-6
+		// high: Ecms2 ~ 10^6 GeV
+
+
+		// Gaetano look at 10^8 eV^2 > 10^24 eV^2
+		// Corresponds to 10^4 eV > 10^12 eV: 
+		double Ecms_low = 1e-12;
+		double Ecms_high = 1e3;
 		// Number of bins to consider
 		int n_bins = 30;	
 		vector<double> Ecms_values = linspace( log(Ecms_low),log(Ecms_high), n_bins);
@@ -318,39 +298,4 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-
-
-
-
-
-	// // Setup 2 is a mass scan, in an energy slice
-	// if( isetup == 2 ){
-	// 	double m_low = 0.01;
-	// 	double m_max = 3.0;
-	// 	int n_bins = 15;	
-	// 	vector<double> m_bins = linspace( log(m_low),log(m_max), n_bins);
-	// 	// Vector to store the computed cross-section
-	// 	vector< array<double,2> > sigma;	
-
-	// 	for( int i(0); i < n_bins; i++ ){
-	// 		// Select mQ
-	// 		mQ = exp(m_bins[i]);
-	// 		mH = mQ;
-	// 		// Update hadronic info
-	// 		hadr_info.mHadron = mQ;
-
-	// 		// Compute the differential cross-section
-	// 		array<double,2> sigma_fiducial = {0.};
-	// 		if( s_process == "eeQQb" )
-	// 			sigma_fiducial = integration::vegasC4(Vegas_Interface_eeQQb, warmup_precision, integration_precision, cuba_dimensions, &hadr_info, seed_cache, grid_cache, max_evaluations );
-	// 		// Store the cross-section and MC error in a vector
-	// 		sigma.push_back( sigma_fiducial );
-	// 	}
-	// 	// Save result
-	// 	for( unsigned int i=0; i < sigma.size(); i++ ){
-	// 	// for( auto i: sigma ){
-	// 		array<double,2> sig = sigma[i];
-	// 		ofile_results << exp(m_bins[i]) << "\t"	<< sig[0] << "\t" << sig[1] << endl;
-	// 	}
-	// }
 

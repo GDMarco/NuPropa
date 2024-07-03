@@ -40,8 +40,8 @@ namespace Variables {
 	const double mm = 105.65837e-3;
 	const double mtau = 1.77686;
 	// quarks
-	const double md = 0.0;
-	const double mu = 0.0;
+	const double md = 0.05; // Introduce ficticious masses m_pi0 / 2
+	const double mu = 0.05;
 	const double mc = 1.51;
 	const double mb = 4.92;
 	const double mt = 173.0;
@@ -135,8 +135,11 @@ namespace Variables {
 	// Prints channel information
 	void print_channels();
 
+	// Function to setup particle masses per channel
+	void init_channel_information(int, int *pdgs, double *masses);
 
-	extern int channel, pdg_projectile, pdg_fermion;
+
+	extern int channel, pdg_projectile;
 	void init_recola_processes();
 	// Construct a map between process strings and integers
 	extern std::map<int,std::string> process_map;
