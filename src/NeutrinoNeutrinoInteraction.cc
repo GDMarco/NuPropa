@@ -118,14 +118,14 @@ void NeutrinoNeutrinoInteraction::performInteraction(Candidate *candidate) const
 }
 
 
-void NeutrinoNeutrinoInteraction::process(Candidate *candidate) const
-{
+void NeutrinoNeutrinoInteraction::process(Candidate *candidate) const {
     // scale the electron energy instead of background photons
     double z = candidate->getRedshift();
     double E = (1 + z) * candidate->current.getEnergy();
-    double ID = candidate->current.getId();
+    int ID = candidate->current.getId();
+    int IDBkg = this->neutrinoFieldID;
     
-    if (!(abs(ID) == 12 || abs(ID) == 14 || abs(ID) == 16))
+    if (!(abs(ID) == 12 || abs(ID) == 14 || abs(ID) == 16) || !(ID * IDBkg > 0))
         return;
     
     std::vector<double> vecEnergy;

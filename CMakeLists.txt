@@ -56,6 +56,7 @@ add_library(${PLUGINNAME} MODULE
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoAntineutrinoInteraction.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoPhotonInteraction.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Channels.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ChannelsBundle.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoBackground.cc
 )
 

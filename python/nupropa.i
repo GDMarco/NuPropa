@@ -20,6 +20,7 @@
 
 /* Ignore list */
 %ignore operator nupropa::Channels*;
+%ignore operator nupropa::ChannelsBundle*;
 %ignore operator nupropa::NeutrinoField*;
 
 /*  define headers to include into the wrapper. These are the plugin headers
@@ -31,6 +32,7 @@
 #include "nupropa/NeutrinoAntineutrinoInteraction.h"
 #include "nupropa/NeutrinoPhotonInteraction.h"
 #include "nupropa/Channels.h"
+#include "nupropa/ChannelsBundle.h"
 #include "nupropa/NeutrinoBackground.h"
 
 using namespace nupropa;
@@ -44,7 +46,10 @@ using namespace nupropa;
 %template(ChannelsRefPtr) crpropa::ref_ptr<nupropa::Channels>;
 %feature("director") nupropa::Channels;
 
-/*Template for ref_ptr*/
+%implicitconv crpropa::ref_ptr<nupropa::ChannelsBundle>;
+%template(ChannelsBundleRefPtr) crpropa::ref_ptr<nupropa::ChannelsBundle>;
+%feature("director") nupropa::ChannelsBundle;
+
 %implicitconv crpropa::ref_ptr<nupropa::NeutrinoField>;
 %template(NeutrinoFieldRefPtr) crpropa::ref_ptr<nupropa::NeutrinoField>;
 %feature("director") nupropa::NeutrinoField;
@@ -54,6 +59,7 @@ using namespace nupropa;
 %include "nupropa/NeutrinoAntineutrinoInteraction.h"
 %include "nupropa/NeutrinoPhotonInteraction.h"
 %include "nupropa/Channels.h"
+%include "nupropa/ChannelsBundle.h"
 %include "nupropa/NeutrinoBackground.h"
 
 

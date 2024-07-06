@@ -6,6 +6,7 @@
 #include <string>
 #include <fstream>
 #include <filesystem>
+#include <unordered_map>
 
 namespace nupropa {
 
