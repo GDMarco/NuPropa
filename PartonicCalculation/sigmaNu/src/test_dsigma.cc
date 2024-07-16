@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 
 	// Also write the scattering process
 	ofile_results << endl << "# channel_id = " << channel << endl;
-	ofile_results << " active_virtual = " << active_virtual << endl;
+	ofile_results << "# active_virtual = " << active_virtual << endl;
 	ofile_results << "# process  = " << process_map.at(channel) << endl;
 
 	/////////////////
@@ -238,10 +238,14 @@ int main(int argc, char *argv[])
 		// Output the results
 		cout << "Integral = " << sigma_fiducial[0] << endl;
 		cout << "Error = " << sigma_fiducial[1] << endl;	
+
+		cout << sigma_nu_incl( Ecms2, channel ) << endl;
+
 		// Save this information to the file
-		ofile_results << "# Sigma Fiducial" << endl;
+		ofile_results << "# Sigma Fiducial: sigma\terror\tsigma_analytic\tratio" << endl;
+
 		// Include a function which writes all relevant information to the text file
-		ofile_results << sigma_fiducial[0] << "\t" << sigma_fiducial[1] << endl;
+		ofile_results << sigma_fiducial[0] << "\t" << sigma_fiducial[1] << "\t" << sigma_nu_incl(Ecms2,channel) << "\t" << sigma_fiducial[0]/sigma_nu_incl(Ecms2,channel) << endl;
 	}
 
 	// Set up the energy scan
@@ -260,9 +264,9 @@ int main(int argc, char *argv[])
 		// Gaetano look at 10^8 eV^2 > 10^24 eV^2
 		// Corresponds to 10^4 eV > 10^12 eV: 
 		double Ecms_low = 1e-12;
-		double Ecms_high = 1e3;
+		double Ecms_high = 1e5;
 		// Number of bins to consider
-		int n_bins = 30;	
+		int n_bins = 1e3;	
 		vector<double> Ecms_values = linspace( log(Ecms_low),log(Ecms_high), n_bins);
 		// ^^^^^^^^^^^^^^^^^^^^^^^
 		// Above to be adjusted to match values required by Gaetano	
@@ -279,12 +283,22 @@ int main(int argc, char *argv[])
 			sigma.push_back( sigma_incl );
 		}
 
-		ofile_results << "# Ecms\tsigma[pb]\tsigma_error[pb]\n";
+		ofile_results << "# Ecms\tsigma[pb]\tsigma_error[pb]\tsigma_analytic[pb]\tratio\n";
 		// Write the results to the file
 		for( unsigned int i=0; i < sigma.size(); i++ ){
 		// for( auto i: sigma ){
 			array<double,2> sig = sigma[i];
-			ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << endl;
+
+			// For performing some analytic checks: channels (1,2,6,9)
+			if( channel == 1 or channel == 2 or channel == 6 or channel == 9 ){
+				Ecms2 =	pow( exp(Ecms_values[i]), 2);
+				double sigma_analytic = sigma_nu_incl(Ecms2,channel);
+				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << "\t" << sigma_analytic << "\t" << sig[0]/sigma_analytic << endl;
+			}
+			else{
+				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << endl;
+			}
+
 		}		
 	}
 

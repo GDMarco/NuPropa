@@ -41,7 +41,7 @@ double dsigma_channels( KinematicData &Kin, int channel_id ){
         else{
                 // All equal flavour results obtained from |M|^2 for nu1 + nu1 > nu1 + nu1
                 // 1) nu1 + nu1 > nu1 + nu1
-                if( channel_id == 1 )       ME2 = ME2_Analytic::nu1nu1_nu1nu1(1,2,3,4, Kin, pdg_projectile, 12);
+                if( channel_id == 1 )  ME2 = ME2_Analytic::nu1nu1_nu1nu1(1,2,3,4, Kin, pdg_projectile, 12);
                 // 2) nu1 + nu1bar > nu1 + nu1bar
                 if( channel_id == 2  ) ME2 = ME2_Analytic::nu1nu1_nu1nu1(1,4,3,2, Kin, pdg_projectile, 12);
                 // 3) nu1bar + nu1bar > nu1bar + nu1bar
@@ -128,4 +128,77 @@ double dsigma_channels( KinematicData &Kin, int channel_id ){
         }
 
         return ME2 * Kin.weight() / Kin.flux();
+}
+
+
+
+// Implementation of inclusive result for channels 1,2,6 (corresponding to four neutrino scattering)
+// Follows the results in https://cds.cern.ch/record/244041/files/PhysRevD.47.5247.pdf
+// Note I analytically expand these results to be stable in the limit s12 << mz^2
+
+// Eq. 2.1
+double F0(double s,int pdg){
+
+        if( abs(pdg) != 12 ){
+                cerr << "FO: function implemented only for neutrinos currently\n";
+                abort();
+        }
+        double t3 = 1./2.;
+        complex<double> prop = 1. / ( s - MZ2C );
+        complex<double> spz = prop * conj(prop) * pow(mz,4) * s;
+        // 
+        double sigma = 2. * gf * gf * spz.real() * pow(t3 ,2) / ( 3. * pi );
+        return sigma * hbarc2;   
+}
+
+// Eq 2.2
+double F1(double s){
+        double prefac = pow(gf,2) * s / (2. * pi);
+        double y = s / pow(mz,2);
+        double F1 = ( pow(y,2) + 2. * y - 2. * (1.+y)* log1p(y) ) / pow(y,3);
+        if( y < 1e-4 ){
+                F1 = 1. / 3. - y / 6. + y*y/10. - pow(y,3)/15.; // O(y^4)
+        }
+        double sigma = prefac * F1;
+        return sigma * hbarc2;
+}
+
+// Eq 2.3
+double F2(double s){
+        double prefac = pow(gf,2) / (2. * pi);
+        double y = s / pow(mz,2);
+        double F2 = ( 3. * pow(y,2) + 2. * y - 2. * pow( 1.+y, 2 )* log1p(y) ) / pow(y,3);
+        if( y < 1e-4 ){
+                F2 = -2. / 3. + y / 6. - y*y/15. + pow(y,3)/30.; // O(y^4)
+        }
+        // Factor of PZ ( s-mz^2 )
+        complex<double> prop = 1. / ( s - MZ2C );
+        complex<double> pz = prop * conj(prop) * pow(mz,4);        
+        double sigma = prefac * pz.real() * ( s - pow(mz,2) ) * y * F2;
+        return sigma * hbarc2;
+}
+
+// Eq 2.9
+double nui_nui(double s){
+        double prefac = pow(gf,2) / (2. * pi);
+        // Full expression
+        double mz2 = pow(mz,2);
+        //
+        double expr =  mz2 * (s / (s + mz2) + 2. * mz2 / ( 2. *  mz2 + s ) * log1p(s/mz2) );
+        if( s/mz2 < 1e-4 ){
+                expr = 2. * s - 2. * pow(s,2)/mz2;
+        }
+        double sigma = prefac * expr;
+        return sigma * hbarc2;
+
+}
+
+// Implemented for channels: 1, 2, 6
+double sigma_nu_incl(double shat, int chan){
+
+        if( chan == 1 ) return nui_nui(shat);
+        if( chan == 2 ) return F0(shat,12) + F1(shat) + F2(shat);
+        if( chan == 6 ) return F1(shat);
+        if( chan == 9 ) return F0(shat,12);
+        return 0.0;
 }
