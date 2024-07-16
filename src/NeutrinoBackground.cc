@@ -182,7 +182,7 @@ BlackbodyNeutrinoField::BlackbodyNeutrinoField(std::string fieldName, double bla
 }
 
 double BlackbodyNeutrinoField::getNeutrinoDensity(double Eneutrino, double z) const {
-	return 8 * M_PI * pow_integer<3>(Eneutrino / (h_planck * c_light)) / std::expm1(Eneutrino / (k_boltzmann * this->blackbodyTemperature)) / 2; // the /2 is because the BB density should be for the nu+nux, SEE better!
+	return 8 * M_PI * pow_integer<3>(Eneutrino / (h_planck * c_light)) / (std::exp(Eneutrino / (k_boltzmann * this->blackbodyTemperature))+1) / 2; // the /2 is because the BB density should be for the nu+nux, SEE better!
 }
 
 double BlackbodyNeutrinoField::getMinimumNeutrinoEnergy(double z) const {
