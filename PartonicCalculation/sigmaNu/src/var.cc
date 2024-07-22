@@ -240,14 +240,14 @@ void Variables::init_channels(){
 	process_map.emplace( 26, "nu_1 nu_1~ -> mu- mu+");
 	process_map.emplace( 27, "nu_1 nu_1~ -> tau- tau+");	
 	// Onshell W processes
-	// 28-30) nu1 + gamma > W+ l-
-	process_map.emplace( 28, "nu_e gamma -> W+ e-");
-	process_map.emplace( 29, "nu_m gamma -> W+ m-");
-	process_map.emplace( 30, "nu_t gamma -> W+ t-");
-	// 31-33) nu1bar + gamma > W- l+
-	process_map.emplace( 31, "nu_e~ gamma -> W- e+");
-	process_map.emplace( 32, "nu_m~ gamma -> W- m+");
-	process_map.emplace( 33, "nu_t~ gamma -> W- t+");
+	// 28-30) nu1 + A > W+ l-
+	process_map.emplace( 28, "nu_e A -> W+ e-");
+	process_map.emplace( 29, "nu_m A -> W+ m-");
+	process_map.emplace( 30, "nu_t A -> W+ t-");
+	// 31-33) nu1bar + A > W- l+
+	process_map.emplace( 31, "nu_e~ A -> W- e+");
+	process_map.emplace( 32, "nu_m~ A -> W- m+");
+	process_map.emplace( 33, "nu_t~ A -> W- t+");
 
 	// 99) e- e+ > Q Qbar [testing channel]
 	process_map.emplace( 99, "e- e+ -> c c~");	
@@ -257,38 +257,38 @@ void Variables::init_channels(){
 	////////////////////
 
 	// neutrino + photon scattering NC exchanges
-	// 101-103) nu1  + gamma > nu1 + l2 + l2bar
-	process_map.emplace( 101, "nu gamma -> nu e- e+");
-	process_map.emplace( 102, "nu gamma -> nu mu- mu+");
-	process_map.emplace( 103, "nu gamma -> nu tau- tau+");
-	// 104-109) nu1 + gamma > nu1 + q + qbar
-	process_map.emplace( 104, "nu gamma -> nu d d~");
-	process_map.emplace( 105, "nu gamma -> nu u u~");
-	process_map.emplace( 106, "nu gamma -> nu s s~");
-	process_map.emplace( 107, "nu gamma -> nu c c~");
-	process_map.emplace( 108, "nu gamma -> nu b b~");
-	process_map.emplace( 109, "nu gamma -> nu t t~");
+	// 101-103) nu1  + A > nu1 + l2 + l2bar
+	process_map.emplace( 101, "nu A -> nu e- e+");
+	process_map.emplace( 102, "nu A -> nu mu- mu+");
+	process_map.emplace( 103, "nu A -> nu tau- tau+");
+	// 104-109) nu1 + A > nu1 + q + qbar
+	process_map.emplace( 104, "nu A -> nu d d~");
+	process_map.emplace( 105, "nu A -> nu u u~");
+	process_map.emplace( 106, "nu A -> nu s s~");
+	process_map.emplace( 107, "nu A -> nu c c~");
+	process_map.emplace( 108, "nu A -> nu b b~");
+	process_map.emplace( 109, "nu A -> nu t t~");
 
 	// neutrino + photon scattering CC exchanges
-	// 110-115) nu1  + gamma > l1 + nu2 + l2~ 
-	process_map.emplace( 110, "nu_e gamma -> e- nu_mu mu+");
-	process_map.emplace( 111, "nu_e gamma -> e- nu_tau tau+");
-	process_map.emplace( 112, "nu_mu gamma -> mu- nu_e e+");
-	process_map.emplace( 113, "nu_mu gamma -> mu- nu_tau tau+");
-	process_map.emplace( 114, "nu_tau gamma -> tau- nu_e e+");
-	process_map.emplace( 115, "nu_tau gamma -> tau- nu_muu mu+");
+	// 110-115) nu1  + A > l1 + nu2 + l2~ 
+	process_map.emplace( 110, "nu_e A -> e- nu_mu mu+");
+	process_map.emplace( 111, "nu_e A -> e- nu_tau tau+");
+	process_map.emplace( 112, "nu_mu A -> mu- nu_e e+");
+	process_map.emplace( 113, "nu_mu A -> mu- nu_tau tau+");
+	process_map.emplace( 114, "nu_tau A -> tau- nu_e e+");
+	process_map.emplace( 115, "nu_tau A -> tau- nu_muu mu+");
 
 	// neutrino + photon same lepton flavour cases (1 channel + c.c.)
-	// 116-119) nu1  + gamma > l1 + nu1 + l1~
-	process_map.emplace( 116, "nu_e gamma -> e- nu_e e+");
-	process_map.emplace( 117, "nu_mu gamma -> mu- nu_mu mu+");
-	process_map.emplace( 118, "nu_tau gamma -> tau- nu_tau tau+");		
+	// 116-119) nu1  + A > l1 + nu1 + l1~
+	process_map.emplace( 116, "nu_e A -> e- nu_e e+");
+	process_map.emplace( 117, "nu_mu A -> mu- nu_mu mu+");
+	process_map.emplace( 118, "nu_tau A -> tau- nu_tau tau+");		
 
 	// .... quark channels just consider massless quarks
 	// 119-121)
-	process_map.emplace( 119, "nu_e gamma -> e- u d~");
-	process_map.emplace( 120, "nu_mu gamma -> mu- u d~");
-	process_map.emplace( 121, "nu_tau gamma -> tau- u d~");
+	process_map.emplace( 119, "nu_e A -> e- u d~");
+	process_map.emplace( 120, "nu_mu A -> mu- u d~");
+	process_map.emplace( 121, "nu_tau A -> tau- u d~");
 
 
 	// Implementation of the Recola channels as above (originally I had different str_notation)
@@ -336,30 +336,30 @@ void Variables::init_channels(){
 	process_map_rcl.emplace( 26, "nu_e nu_e~ -> mu- mu+");
 	process_map_rcl.emplace( 27, "nu_e nu_e~ -> tau- tau+");
 	// Onshell W processes
-	// 28-30) nu1 + gamma > W+ l-
-	process_map_rcl.emplace( 28, "nu_e gamma -> W+ e-");
-	process_map_rcl.emplace( 29, "nu_mu gamma -> W+ mu-");
-	process_map_rcl.emplace( 30, "nu_tau gamma -> W+ tau-");
-	// 31-33) nu1bar + gamma > W- l+
-	process_map_rcl.emplace( 31, "nu_e~ gamma -> W- e+");
-	process_map_rcl.emplace( 32, "nu_mu~ gamma -> W- mu+");
-	process_map_rcl.emplace( 33, "nu_tau~ gamma -> W- tau+");
+	// 28-30) nu1 + A > W+ l-
+	process_map_rcl.emplace( 28, "nu_e A -> W+ e-");
+	process_map_rcl.emplace( 29, "nu_mu A -> W+ mu-");
+	process_map_rcl.emplace( 30, "nu_tau A -> W+ tau-");
+	// 31-33) nu1bar + A > W- l+
+	process_map_rcl.emplace( 31, "nu_e~ A -> W- e+");
+	process_map_rcl.emplace( 32, "nu_mu~ A -> W- mu+");
+	process_map_rcl.emplace( 33, "nu_tau~ A -> W- tau+");
 
 	// 99) e- e+ > Q Qbar [testing channel]
 	process_map_rcl.emplace( 99, "e- e+ -> c c~");		
 
 	// neutrino + photon scattering NC exchanges
-	// 101-103) nu1  + gamma > nu1 + l2 + l2bar
-	process_map_rcl.emplace( 101, "nu_mu gamma -> nu_mu e- e+");
-	process_map_rcl.emplace( 102, "nu_e gamma -> nu_e mu- mu+");
-	process_map_rcl.emplace( 103, "nu_e gamma -> nu_e tau- tau+");
-	// 104-109) nu1 + gamma > nu1 + q + qbar
-	process_map_rcl.emplace( 104, "nu_e gamma -> nu_e d d~");
-	process_map_rcl.emplace( 105, "nu_e gamma -> nu_e u u~");
-	process_map_rcl.emplace( 106, "nu_e gamma -> nu_e s s~");
-	process_map_rcl.emplace( 107, "nu_e gamma -> nu_e c c~");
-	process_map_rcl.emplace( 108, "nu_e gamma -> nu_e b b~");
-	process_map_rcl.emplace( 109, "nu_e gamma -> nu_e t t~");
+	// 101-103) nu1  + A > nu1 + l2 + l2bar
+	process_map_rcl.emplace( 101, "nu_mu A -> nu_mu e- e+");
+	process_map_rcl.emplace( 102, "nu_e A -> nu_e mu- mu+");
+	process_map_rcl.emplace( 103, "nu_e A -> nu_e tau- tau+");
+	// 104-109) nu1 + A > nu1 + q + qbar
+	process_map_rcl.emplace( 104, "nu_e A -> nu_e d d~");
+	process_map_rcl.emplace( 105, "nu_e A -> nu_e u u~");
+	process_map_rcl.emplace( 106, "nu_e A -> nu_e s s~");
+	process_map_rcl.emplace( 107, "nu_e A -> nu_e c c~");
+	process_map_rcl.emplace( 108, "nu_e A -> nu_e b b~");
+	process_map_rcl.emplace( 109, "nu_e A -> nu_e t t~");
 
 	// neutrino + photon scattering CC exchanges
 	// 110-115) nu1  + gamma > l1 + nu2 + l2~ 
@@ -670,8 +670,7 @@ void Variables::write_settings(ofstream &infile, string process ){
 	infile << "# m_t = " << mt << endl;	
 
 	// Ecms
-	// infile << "# Ecms = " << Ecms << endl;
-
+	infile << "# Ecms (default) = " << Ecms << endl;
 
 	return;
 }

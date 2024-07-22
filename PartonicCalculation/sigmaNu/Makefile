@@ -6,7 +6,7 @@ LHAPDF_PATH = $(shell lhapdf-config --prefix)
 # CUBA path
 CUBA_PATH = $(shell cuba-config --prefix)
 # Recola path
-RECOLA_PATH = /Users/rhorry/Research/recola2-collier-2.2.4/recola2-2.2.4
+RECOLA_PATH = /Users/rhorry/Research/BUILDS
 # your CUBA 4.0 path (testing: /usr/local/Cuba-4.0)
 # CUBA_PATH = /Users/rhorry/Research/BUILDS/CUBA/
 
