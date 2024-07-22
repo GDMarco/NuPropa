@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
   mu0 = mz;
 	mu_loop = 100.;	// No results depend on mu_reg value
 	// Set the collision environment (pp collisions at LHC 13 TeV)
-	Ecms = 100.0;
+	Ecms = 1.0;
 	Ecms2 = pow(Ecms,2);
 
 	int isetup(0); // If we perhaps want to select some specific processes
@@ -191,11 +191,11 @@ int main(int argc, char *argv[])
 	///////////////////////////
 	// Information for Vegas //
 	///////////////////////////	
-	double warmup_precision = 4e-2;
+	double warmup_precision = 1e-2;
 	double integration_precision = 1e-3;
 	int grid_no = 3;
 	grid_cache = grid_no;
-	int max_evaluations = 1e7;
+	int max_evaluations = 2e7;
 
 	// When evaluating virtual corrections, work with reduced precision for NLO coefficient
 	if( active_virtual ){
@@ -253,23 +253,15 @@ int main(int argc, char *argv[])
 
 		// Either derive Ecms for a varying Enu, or directly fix Ecms
 
-		// eV > GeV: 10^9
-
-		// Scatter from 2 * electron mass threshold
-		// So 2 me = 1e-3 GeV = 1 MeV = 10^6 eV
-		// low: Ecms2 ~ 1e-6
-		// high: Ecms2 ~ 10^6 GeV
-
-
 		// Gaetano look at 10^8 eV^2 > 10^24 eV^2
 		// Corresponds to 10^4 eV > 10^12 eV: 
-		double Ecms_low = 1e-12;
+		double Ecms_low = 1e-7;
 		double Ecms_high = 1e5;
 		// Number of bins to consider
-		int n_bins = 1e3;	
+		int n_bins = 500;
 		vector<double> Ecms_values = linspace( log(Ecms_low),log(Ecms_high), n_bins);
+		// Note, the cross-sections plateau above 5x10^3 GeV
 		// ^^^^^^^^^^^^^^^^^^^^^^^
-		// Above to be adjusted to match values required by Gaetano	
 
 		// Vector to store the computed cross-section
 		vector< array<double,2> > sigma;
