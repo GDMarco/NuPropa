@@ -363,24 +363,24 @@ void Variables::init_channels(){
 
 	// neutrino + photon scattering CC exchanges
 	// 110-115) nu1  + gamma > l1 + nu2 + l2~ 
-	process_map_rcl.emplace( 110, "nu_e gamma -> e- nu_mu mu+");
-	process_map_rcl.emplace( 111, "nu_e gamma -> e- nu_tau tau+");
-	process_map_rcl.emplace( 112, "nu_mu gamma -> mu- nu_e e+");
-	process_map_rcl.emplace( 113, "nu_mu gamma -> mu- nu_tau tau+");
-	process_map_rcl.emplace( 114, "nu_tau gamma -> tau- nu_e e+");
-	process_map_rcl.emplace( 115, "nu_tau gamma -> tau- nu_mu mu+");
+	process_map_rcl.emplace( 110, "nu_e A -> e- nu_mu mu+");
+	process_map_rcl.emplace( 111, "nu_e A -> e- nu_tau tau+");
+	process_map_rcl.emplace( 112, "nu_mu A -> mu- nu_e e+");
+	process_map_rcl.emplace( 113, "nu_mu A -> mu- nu_tau tau+");
+	process_map_rcl.emplace( 114, "nu_tau A -> tau- nu_e e+");
+	process_map_rcl.emplace( 115, "nu_tau A -> tau- nu_mu mu+");
 
 	// neutrino + photon same lepton flavour cases (1 channel + c.c.)
-	// 116-119) nu1  + gamma > l1 + nu1 + l1~
-	process_map_rcl.emplace( 116, "nu_e gamma -> e- nu_e e+");
-	process_map_rcl.emplace( 117, "nu_mu gamma -> mu- nu_mu mu+");
-	process_map_rcl.emplace( 118, "nu_tau gamma -> tau- nu_tau tau+");		
+	// 116-119) nu1  + A > l1 + nu1 + l1~
+	process_map_rcl.emplace( 116, "nu_e A -> e- nu_e e+");
+	process_map_rcl.emplace( 117, "nu_mu A -> mu- nu_mu mu+");
+	process_map_rcl.emplace( 118, "nu_tau A -> tau- nu_tau tau+");		
 
 	// .... quark channels just consider massless quarks
 	// 119-121) 
-	process_map_rcl.emplace( 119, "nu_e gamma -> e- u d~");
-	process_map_rcl.emplace( 120, "nu_mu gamma -> mu- u d~");
-	process_map_rcl.emplace( 121, "nu_tau gamma -> tau- u d~");
+	process_map_rcl.emplace( 119, "nu_e A -> e- u d~");
+	process_map_rcl.emplace( 120, "nu_mu A -> mu- u d~");
+	process_map_rcl.emplace( 121, "nu_tau A -> tau- u d~");
 
 }
 
