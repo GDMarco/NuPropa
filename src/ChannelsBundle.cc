@@ -131,7 +131,7 @@ void ChannelsBundle::sortDictionaryIndexes(int indexErased) {
 
 void ChannelsBundle::removeChannels(int ID, int IDBkg) {
     
-    if (abs(ID) == abs(IDBkg)) {
+    if (abs(ID) == abs(IDBkg)) { // case i = j
         
         std::string interacting = "NeutrinoAntineutrino";
         
@@ -185,20 +185,29 @@ void ChannelsBundle::removeChannels(int ID, int IDBkg) {
                 }
             } else {
                 
-                int i = el.first;
+                std::string elastic = "NeutrinoiAntineutrinojElastic";
                 
-                this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                this->tabRate.erase(this->tabRate.begin() + i);
-                this->tabE.erase(this->tabE.begin() + i);
-                this->tabs.erase(this->tabs.begin() + i);
-                this->tabCDF.erase(this->tabCDF.begin() + i);
-                this->tabProductsID.erase(this->tabProductsID.begin() + i);
-                
-                sortDictionaryIndexes(i);
+                if (interactionChannel == elastic) { // here I should add the channel corresponding to Eq. 2.2, valid also for i = j, not only for i != j. Ask Rhorry if correct in this way!
+                    
+                    continue;
+                    
+                } else {
+                    
+                    int i = el.first;
+                    
+                    this->tabEnergy.erase(this->tabEnergy.begin() + i);
+                    this->tabRate.erase(this->tabRate.begin() + i);
+                    this->tabE.erase(this->tabE.begin() + i);
+                    this->tabs.erase(this->tabs.begin() + i);
+                    this->tabCDF.erase(this->tabCDF.begin() + i);
+                    this->tabProductsID.erase(this->tabProductsID.begin() + i);
+                    
+                    sortDictionaryIndexes(i);
+                }
             }
         }
    
-    } else {
+    } else { // for i != j
         
         std::string interacting = "NeutrinoiAntineutrinoj";
     
