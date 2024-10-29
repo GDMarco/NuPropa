@@ -118,6 +118,11 @@ int Vegas_Interface(const int *ndim, const cubareal xx[],
 	KinematicData Kin = Generate_Phase_Space( xx, nfinal, masses, nrandom, "ee" );
 	// Manually set as(muR) currently not used
 	Kin.set_as_mur( 0.118 );
+	// Check if the phase-space point is broken or not
+	if( !Kin.get_cuts() ){
+		ff[0] = 0.0;
+		return 0;
+	}
 
 	// New function ordered by channels (integers)
 	dsigma_summed = dsigma_channels( Kin, channel );
@@ -149,7 +154,7 @@ int main(int argc, char *argv[])
   mu0 = mz;
 	mu_loop = 100.;	// No results depend on mu_reg value
 	// Set the collision environment (pp collisions at LHC 13 TeV)
-	Ecms = 1.0;
+	Ecms = 1e5;
 	Ecms2 = pow(Ecms,2);
 
 	int isetup(0); // If we perhaps want to select some specific processes
@@ -239,7 +244,9 @@ int main(int argc, char *argv[])
 		cout << "Integral = " << sigma_fiducial[0] << endl;
 		cout << "Error = " << sigma_fiducial[1] << endl;	
 
-		cout << sigma_nu_incl( Ecms2, channel ) << endl;
+		cout << sigma_Wl_incl( Ecms2, channel ) << endl;
+
+		// cout << sigma_nu_incl( Ecms2, channel ) << endl;
 
 		// Save this information to the file
 		ofile_results << "# Sigma Fiducial: sigma\terror\tsigma_analytic\tratio" << endl;
@@ -286,6 +293,12 @@ int main(int argc, char *argv[])
 				Ecms2 =	pow( exp(Ecms_values[i]), 2);
 				double sigma_analytic = sigma_nu_incl(Ecms2,channel);
 				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << "\t" << sigma_analytic << "\t" << sig[0]/sigma_analytic << endl;
+			}
+			else if( channel >= 28 and channel <= 33 ){
+				Ecms2 =	pow( exp(Ecms_values[i]), 2);
+				double sigma_analytic = sigma_Wl_incl(Ecms2,channel);
+				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << "\t" << sigma_analytic << "\t" << sig[0]/sigma_analytic << endl;
+
 			}
 			else{
 				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << endl;

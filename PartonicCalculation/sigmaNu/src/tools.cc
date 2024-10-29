@@ -20,6 +20,10 @@ void p4vec::boost(double bx, double by, double bz){
     // beta_v = {bx,by,pz}
     double b2 = bx*bx + by*by + bz*bz;
     double gam  = 1./sqrt(1.-b2);
+    if( gam < 0. or isnan(gam) ){
+        cout << gam << " " << b2 << endl;
+        cout << bx*bx + by*by + bz*bz << endl;
+    }
     double bp = p[1]*bx + p[2]*by + p[3]*bz;
     double gam2 = (gam-1.)/b2;
     if( b2 <= 0 ) gam2 = 0.; // For numerical stability when beta = 0.
@@ -333,6 +337,10 @@ std::array<double,3> CoM_1to2_kinematics_sq(double msq_ij, double msq_i, double 
     // |pi| = |pj| = mij/2. * Kallen^{1/2}(1.,xi,xj)
     // sqrt( 1 -)
     double vel = sqrt( kallen(1.,xi,xj) );
+    // What about the approximation?
+    // if( xi < 1e-8 and xj < 1e-8 ){
+    //     vel = 1. - xi - xj;
+    // }
     if( xi == 0.0 ){
         vel = ( 1. - xj );
     }
@@ -565,6 +573,22 @@ KinematicData Gen_2to3_Massive( const cubareal rand[], const int ps_opt, const d
     double m3 = masses[0];
     double m4 = masses[1];
     double m5 = masses[2];
+    // The phasespace factorisation is performed as:
+    // dphi_3( (p1+p2)^2; p3, p4, p5 ) = dphi_2( (p1+p2)^2; p3, p45 ) dphi_2( (p4+p5)^2; p4, p5 ) dmsq45/(2pi)
+    // For very high p1.p2 (e.g. 10^GeV), it is numerically more stable if the (45) system is the more massive one
+
+    // bool switch_34 = false;
+    // // For the massless m4 case
+    // if( masses[1] < 1e-6 ){
+    //     // switch p3 and p4
+    //     m3 = masses[1]; // Make m3 massless
+    //     m4 = masses[0]; // Make m4 massive (instead of m3)
+    //     switch_34 = true;
+    // }
+
+    double msq3 = pow(m3,2);
+    double msq4 = pow(m4,2);
+    double msq5 = pow(m5,2);
     // ######################################################## //
     // ######################################################## //
     // Start the generation of the above differential variables //
@@ -610,10 +634,14 @@ KinematicData Gen_2to3_Massive( const cubareal rand[], const int ps_opt, const d
     // Use these variables to derive Energies and |p| of particle 3 and 45
     // Function which returns Ei, Ej, |pi| = |pj| in CoM frame (mij;mi,mj)
     // std::array<double,3> CoM_Kins_12 = CoM_1to2_kinematics( m12, m3, m45 );
-    std::array<double,3> CoM_Kins_12 = CoM_1to2_kinematics_sq( s12, pow(m3,2), msq45 );    
+    std::array<double,3> CoM_Kins_12 = CoM_1to2_kinematics_sq( s12, msq3, msq45 );    
     double E3_12  = CoM_Kins_12[0];
     double E45_12 = CoM_Kins_12[1];
     double p3_12  = CoM_Kins_12[2];
+
+    // For stability, apply on-shell relation for p3
+    double musq45 = msq45 / pow(E45_12,2);
+    double p45_12 = E45_12 * sqrt( 1. - musq45 );
 
     /////////////////////////////////////////
     // [1] costh_12 integration (12-frame) //
@@ -623,31 +651,6 @@ KinematicData Gen_2to3_Massive( const cubareal rand[], const int ps_opt, const d
     double cth_12_max = +1. - tech_cut;
     cth_12 = cth_12_min + (cth_12_max - cth_12_min) * rand[1];
     jacob *= (cth_12_max - cth_12_min) * ( 2. * M_PI ); // dOmega_12 ~ cth_12 dphi_12, [where dphi_12 integration just dropped, i.e. dPhi_12 -> 2 Pi]
-    //////////////////////////////////////////////////////////////////////
-    // [1] Alternatively, consider t_hat integration: t_hat = (p1-p3)^2 //
-    //////////////////////////////////////////////////////////////////////    
-    // t_hat = (p1-p3)^2 = m3^2 - 2 (E1 E3 - |p_in| |p_out| cos_theta ), with |p_in| = sqrt(s12)/2 = m12/2
-    // t_hat_min [cos_theta -> -1]
-    bool integration_t_chan = false; bool linear = false;
-    if( integration_t_chan ){
-        double t_hat_max = min( pow(m3,2) - m12 * ( E3_12 - p3_12 ), -m12*tech_cut );
-        double t_hat_min = pow(m3,2) - m12 * ( E3_12 + p3_12 );
-        double t_hat(0.);
-        // Linear sampling
-        if( linear ){
-            t_hat = t_hat_min + (t_hat_max - t_hat_min) * rand[1];
-            jacob *= (t_hat_max - t_hat_min) / (cth_12_max - cth_12_min) / ( m12 * p3_12);
-        }
-        // Log sampling
-        if( !linear ){
-            // How about integration in log[-that]
-            double ml_t_hat = log(-t_hat_min) + (log(-t_hat_max) - log(-t_hat_min)) * rand[1];
-            t_hat = - exp(ml_t_hat);
-            jacob *= t_hat * (log(-t_hat_max) - log(-t_hat_min)) / (cth_12_max - cth_12_min) / ( m12 * p3_12 );
-        }
-        // dervie cos theta = ( t_hat - m3^2 )/|p3|
-        cth_12 = ( m12 * E3_12 + t_hat - pow(m3,2) ) / ( m12 * p3_12 );
-    }
     // Whatever approach, derive s^2_theta
     double sth_12 = sqrt( (1.-cth_12)*(1.+cth_12) );    
 
@@ -671,13 +674,14 @@ KinematicData Gen_2to3_Massive( const cubareal rand[], const int ps_opt, const d
     p4vec p2( m12/2.0, 0, 0,-m12/2.0 );
     // Define p3, p45 in the (12) frame
     p4vec p3(   E3_12, 0.0, +p3_12*sth_12, +p3_12*cth_12);
-    p4vec p45( E45_12, 0.0, -p3_12*sth_12, -p3_12*cth_12);
+    p4vec p45( E45_12, 0.0, -p45_12*sth_12, -p45_12*cth_12);
     // For extra stability could consider:
-    p45 = p1 + p2 - p3;
+    // p45 = p1 + p2 - p3;
     /////////////////////////////////////////
     // Momenta of p4, p5 in the (45) frame //
     /////////////////////////////////////////
-    std::array<double,3> CoM_Kins_45 = CoM_1to2_kinematics( m45, m4, m5 );
+    // std::array<double,3> CoM_Kins_45 = CoM_1to2_kinematics( m45, m4, m5 );
+    std::array<double,3> CoM_Kins_45 = CoM_1to2_kinematics_sq( msq45, msq4, msq5 );
     double E4_45  = CoM_Kins_45[0];
     double E5_45  = CoM_Kins_45[1];
     double p4_45  = CoM_Kins_45[2];
@@ -688,7 +692,7 @@ KinematicData Gen_2to3_Massive( const cubareal rand[], const int ps_opt, const d
     p4.boost( p45.px()/p45.E(), p45.py()/p45.E(), p45.pz()/p45.E() );
     p5.boost( p45.px()/p45.E(), p45.py()/p45.E(), p45.pz()/p45.E() );
     // For further extra stability, could consider:
-    p5 = p1 + p2 - p3 - p4;
+    p5 = p45 - p4;
 
     // Generate 5 particle Kinematic Data structure
     KinematicData KinOut(5);
@@ -703,7 +707,7 @@ KinematicData Gen_2to3_Massive( const cubareal rand[], const int ps_opt, const d
     KinOut.set_pdg_i( 2, 0 );
     KinOut.set_pdg_i( 3, 0 );
     KinOut.set_pdg_i( 4, 0 );
-    KinOut.set_pdg_i( 5, 0 );    
+    KinOut.set_pdg_i( 5, 0 );
 
     double scale = KinematicScales( KinOut, scale_opt );
     KinOut.set_muf( scale * muf_var );
@@ -720,6 +724,14 @@ KinematicData Gen_2to3_Massive( const cubareal rand[], const int ps_opt, const d
     // Apply analysis cuts (check if phase-space point passes cuts or not)
     apply_cuts( KinOut );
 
+    // Check the boost factor |p|/E
+    if( p45.modp() / p45.E() >= 1.0 ){
+        cerr << "large boost factor encountered of |p|/E = " << setprecision(15) << p45.modp() / p45.E() << endl;
+        cerr << "boost to the CoM frame will not be well defined\n";
+        KinOut.set_cuts(false);
+        return KinOut;
+    }        
+
     // Debug phase-space point
     if( scale < 0 or isnan(scale) ){
         debug_PS_point( KinOut );
@@ -729,9 +741,58 @@ KinematicData Gen_2to3_Massive( const cubareal rand[], const int ps_opt, const d
     // Some de-bugging for phase-space points
     if( KinOut.get_cuts() ){
         double ET_sum = p3.ET() + p4.ET() + p5.ET();
-        if( isnan(ET_sum) or ET_sum < 0 ){
-            debug_PS_point( KinOut );
-        }
+        if( isnan(ET_sum) or isinf(ET_sum) or ET_sum < 0 ){
+            // debug_PS_point( KinOut );
+            KinOut.set_cuts(false);
+            return KinOut;
+            // cout << "fuck\n";
+            // p45.print();
+            // p4.print();
+            // p5.print();
+            // cout << "ETsum = " << ET_sum << setprecision(15) << endl;
+            // cout << " E3_12  = " << CoM_Kins_12[0] << endl;
+            // cout << " E45_12 = " << CoM_Kins_12[1] << endl;
+            // cout << " p3_12  = " << CoM_Kins_12[2] << endl;
+            // cout << " p3.m2()/msq3 = " << (pow(E3_12,2) - pow(p3_12,2))/p3.m2() << endl;
+            // cout << " p45.m2() = " << (pow(E45_12,2) - pow(p3_12,2))/msq45 << endl;        
+            // cout << " p45.m2() = " << (E45_12+p3_12)*(E45_12-p3_12)/msq45 << endl;         
+     
+            // cout << "sinth, costh " << sth_45 << " " << cth_45 << endl;
+            // cout << "beta_BOOST = " << setprecision(15) <<
+            //         p45.px()/p45.E() << " " << 
+            //         p45.py()/p45.E() << " " <<
+            //         p45.pz()/p45.E() << endl;
+
+            // cout << "E4_45  = " << CoM_Kins_45[0] << endl;
+            // cout << "E5_45  = " << CoM_Kins_45[1] << endl;
+            // cout << "p4_45  = " << CoM_Kins_45[2] << endl;
+            // cout << "m45 (m45^2) = " << m45 << " " << msq45 << endl;
+            // cout << "(m4+m5)^2_min " << pow(m4+m5,2) << endl;
+            // // The velocity factors
+            // cout << "msq5 / msq45 = " << msq5 / msq45 << endl;
+            // cout << sqrt(msq45) / 2. * ( 1. + msq5 / msq45 ) << endl;
+            // cout << sqrt(msq45) / 2. * ( 1. - msq5 / msq45 ) << endl;
+
+
+            // p4vec p4_new( E4_45, +p4_45*sth_45*cos(phi_45), +p4_45*sth_45*sin(phi_45), +p4_45*cth_45 );
+            // p4vec p5_new( E5_45, -p4_45*sth_45*cos(phi_45), -p4_45*sth_45*sin(phi_45), -p4_45*cth_45 );        
+            // p4_new.print();
+            // p5_new.print();
+
+            // p4vec p45_new = p4_new + p5_new;
+            // p45_new.print();
+
+            // cout << "Instability in the following boost\n";
+            // p4_new.boost( p45.px()/p45.E(), p45.py()/p45.E(), p45.pz()/p45.E() );
+            // p5_new.boost( p45.px()/p45.E(), p45.py()/p45.E(), p45.pz()/p45.E() );
+
+            // p4_new.print();
+            // p5_new.print();
+            // cout << "m2 of p45 in diff. frame = " << p45.m2()  <<  " " << p45_new.m2() << endl;
+            // cout << p3.m2() << endl;
+            // cout << p5.m2() << endl;  
+        }      
+
         // Perform sanity check of momentum conservation for a well defined PS point
         p4vec mom_cons = p1 + p2 - p3 - p4 - p5;
         // Check of momentum conservation
@@ -742,6 +803,7 @@ KinematicData Gen_2to3_Massive( const cubareal rand[], const int ps_opt, const d
             mom_cons.print();
             cout << "" << endl;
             debug_PS_point( KinOut );
+            KinOut.set_cuts(false);
         }
         // Could consider also defining p5 = p1 + p2 - p3 - p4 (for numerical stability?)
     }
