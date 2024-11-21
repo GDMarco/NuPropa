@@ -130,6 +130,10 @@ namespace Variables {
 	extern bool active_pTnu_min,	active_pTnu_max;
 	extern double pTnu_min, 		pTnu_max;
 
+	// CoM frame scattering
+	extern bool active_costh13_min, active_costh13_max;
+	extern double costh13_min,		costh13_max;
+
 	// Function to initialise Recola processes
 	void init_channels();
 	// Prints channel information
