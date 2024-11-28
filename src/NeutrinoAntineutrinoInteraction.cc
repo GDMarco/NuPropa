@@ -61,7 +61,6 @@ void NeutrinoNeutrinoInteraction::setThinning(double thinning) {
 }
 
 void NeutrinoAntineutrinoInteraction::setChannelsBundle(ref_ptr<Channels> channels, std::string fname) {
-
     this->channelsBundle = new ChannelsBundle(channels, fname); //ChannelsBundle(channels, fname);
 }
 
@@ -72,7 +71,12 @@ void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate) c
     if (not haveSecondaries)
         return;
     
-    // function to take the cumulative inverse mean free path and the other stuff!
+    int indexChannel = this->channelsBundle->getSelectedChannelIndex();
+    
+    std::vector<double> tabE = this->tabE[indexChannel];
+    std::vector<double> tabs = this->tabs[indexChannel];
+    std::vector<std::vector<double>> tabCDF = this->tabCDF[indexChannel];
+    // to select the correct differential cross section for the selected channel
     
     // the products depends on the channel
     double w = 1.;
@@ -81,18 +85,37 @@ void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate) c
     double E = candidate->current.getEnergy() * (1 + z);
     int ID = candidate->current.getId();
     
-    // energies of the secondary particles
-    Random &random = Random::instance();
-    Vector3d pos = random.randomInterpolatedPosition(candidate->previous.getPosition(), candidate->current.getPosition());
-    // naive values
-    double E1 = E / 10.;
-    double E2 = E - E1;
+    // check if in tabulated energy range
+    if (E < tabE.front() or (E > tabE.back()))
+            return;
     
-    if (haveSecondaries)
-        candidate->addSecondary(this->channelsBundle->getSelectedProductsID()
-                                
-                                [0], E1 / (1 + z), pos, w, this->interactionTag);
-        candidate->addSecondary(this->channelsBundle->getSelectedProductsID()[1], E2 / (1 + z), pos, w, this->interactionTag);
+    // sample the value of s
+    Random &random = Random::instance();
+    size_t i = closestIndex(E, tabE);  // find closest tabulation point
+    size_t j = random.randBin(tabCDF[i]);
+    double lo = tabs[j-1]; // first s-tabulation point below min(s_kin) = (2 me c^2)^2;
+    // ensure physical value with the threshold, for instance double lo = std::max(4 * mec2 * mec2, tabs[j-1]);
+    double hi = tabs[j];
+    double s = lo + random.rand() * (hi - lo);
+    
+    // this s value is then used to sample the energy of the secondaries from the differential cross section
+    
+    // naive values
+    // differential cross section with sample function from the CDF!
+    // can we generalise it???
+    
+    
+    // double E1 = sample.interpolation(E, s);
+    // double E2 = E - E1;
+    
+    // energies of the secondary particles
+    Vector3d pos = random.randomInterpolatedPosition(candidate->previous.getPosition(), candidate->current.getPosition());
+    
+    // naive values
+    E1 = E / 10.;
+    E2 = E - E1;
+    candidate->addSecondary(this->channelsBundle->getSelectedProductsID()[0], E1 / (1 + z), pos, w, this->interactionTag);
+    candidate->addSecondary(this->channelsBundle->getSelectedProductsID()[1], E2 / (1 + z), pos, w, this->interactionTag);
 }
 
 void NeutrinoAntineutrinoInteraction::process(Candidate *candidate) const {
