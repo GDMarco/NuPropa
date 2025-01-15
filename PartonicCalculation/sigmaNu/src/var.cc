@@ -46,6 +46,9 @@ int Variables::scale_opt;
 // pT
 bool Variables::active_pTnu_min,	Variables::active_pTnu_max;
 double Variables::pTnu_min, 		Variables::pTnu_max;
+// costh13 scattering restrictions
+bool Variables::active_costh13_min, Variables::active_costh13_max;
+double Variables::costh13_min, Variables::costh13_max;
 
 
 
@@ -147,6 +150,10 @@ void Variables::init_default(){
 	// Cuts on outgoing particles: if we wish to be differential
 	active_pTnu_min = false; pTnu_min = 0.;
 	active_pTnu_max = false; pTnu_max = 0.;
+
+	// Costh13 in CoM frame
+	active_costh13_min = false; costh13_min = 0.;
+	active_costh13_max = false; costh13_max = 0.;
 
 	// Effective EW scheme
 	int ischeme_default = 1;

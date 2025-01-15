@@ -345,7 +345,7 @@ std::vector<double> ChannelsBundle::fillTableZeros(std::vector<double> table, si
     }
 }
 
-void ChannelsBundle::computeInteractionProbabilities (std::vector<std::vector<double>> rates) {
+void ChannelsBundle::computeInteractionProbabilities(std::vector<std::vector<double>> rates) {
     size_t cols = rates[0].size();
     size_t rows = rates.size();
     
@@ -408,6 +408,7 @@ void ChannelsBundle::getProductsID(std::vector<double> tabEnergy, double E) {
     
     std::vector<int> IDs = this->tabProductsID[selChannel];
     this->selectedProductsID = IDs;
+    this->selectedChannelIndex = selChannel;
     // see the correspondence between the id and the selected channel -> assign the products IDs
     // to take into account parity invariance of the processes... !
     // for the elastic scatterings there are initialising values!
@@ -473,6 +474,10 @@ double ChannelsBundle::getRate(int ID, int IDBkg, double E) {
 
         return rate;
     }
+}
+
+int ChannelsBundle::getSelectedChannelIndex() {
+    return this->selectedChannelIndex;
 }
 
 std::vector<int> ChannelsBundle::getSelectedProductsID() {

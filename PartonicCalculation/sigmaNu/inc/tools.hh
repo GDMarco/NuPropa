@@ -151,6 +151,8 @@ std::vector<T> linspace(T a, T b, size_t N) {
     return xs;
 }
 
+std::array<double,3> CoM_1to2_kinematics_sq(double msq_ij, double msq_i, double msq_j);
+
 // A function for debugging a phase-space point
 void debug_PS_point( KinematicData & );
 

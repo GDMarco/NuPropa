@@ -10,6 +10,7 @@ RECOLA_PATH = /Users/rhorry/Research/BUILDS
 # your CUBA 4.0 path (testing: /usr/local/Cuba-4.0)
 # CUBA_PATH = /Users/rhorry/Research/BUILDS/CUBA/
 
+CXX=g++-13
 # compiler flags: -Wall -O2
 CXXFLAGS = -Wall -O2 -std=c++11
 
@@ -66,11 +67,15 @@ CXXFLAGS += $(INCLUDE_PATH)
 CXXFLAGS += "-Wl,-no_warn_duplicate_libraries"
 
 # Build all binaries
-all: $(BINDIR)/Sigma.exe
+all: $(BINDIR)/Sigma.exe $(BINDIR)/dSigma.exe
 
-# Program for QQbar production in e+e- collisions
+# Test program for inclusive cross-section
 $(BINDIR)/Sigma.exe: $(SRCDIR)/test_dsigma.cc $(OBJ)
 	$(CXX) $(CXXFLAGS) $(OBJ) -o $@ $< $(LIBS_PATH)
+
+# Test program for differential cross-section computation
+$(BINDIR)/dSigma.exe: $(SRCDIR)/wrapper_dsigma.cc $(OBJ)
+	$(CXX) $(CXXFLAGS) $(OBJ) -o $@ $< $(LIBS_PATH)	
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cc
 	$(CXX) -c -o $@ $< $(CXXFLAGS)

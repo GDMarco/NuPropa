@@ -105,7 +105,16 @@ void NeutrinoPhotonInteraction::performInteraction(Candidate *candidate) const {
     double E = candidate->current.getEnergy() * (1 + z);
     int ID = candidate->current.getId();
     
-    double leptonE = (E - (mass_W + mass_electron) * c_squared); // to adjust according to the ID!
+    double leptonE;
+    
+    if (std::abs(ID) == 12) {
+        leptonE = (E - (mass_W + mass_electron) * c_squared); // to adjust according to the ID!
+    } else if (std::abs(ID) == 14) {
+        leptonE = (E - (mass_W + mass_muon) * c_squared);
+    } else {
+        leptonE = (E - (mass_W + mass_tauon) * c_squared);
+    }
+    
     int leptonID;
     
     if (ID > 0) {
@@ -200,7 +209,7 @@ void NeutrinoPhotonInteraction::process(Candidate *candidate) const
     double E = (1 + z) * candidate->current.getEnergy();
     double ID = candidate->current.getId();
     
-    if (!(abs(ID) == 12 || abs(ID) == 12 || abs(ID) == 16))
+    if (!(abs(ID) == 12 || abs(ID) == 14 || abs(ID) == 16))
         return;
    
     std::vector<double> tabEnergy = getTabulatedEnergy(ID);

@@ -30,7 +30,7 @@ NeutrinoAntineutrinoInteraction::NeutrinoAntineutrinoInteraction(ref_ptr<Neutrin
  In the case of the neutrino-antineutrino interactions the elastic scatterings furnish the tabEnergy, since they do not have interaction energy thresholds (almost)!
  */
 
-// channels should be an unordered map <bool, "interaction">, maybe interaction tag? setChannels should be a way of filling this object, knowing how they are ordered!
+// channels have an unordered map <bool, "interaction">, maybe interaction tag? setChannels should be a way of filling this object, knowing how they are ordered!
 void NeutrinoAntineutrinoInteraction::setNeutrinoField(ref_ptr<NeutrinoField> neutrinoField) {
     this->neutrinoField = neutrinoField;
     this->neutrinoFieldID = neutrinoField->getParticleID(); 
@@ -93,7 +93,7 @@ void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate) c
     Random &random = Random::instance();
     size_t i = closestIndex(E, tabE);  // find closest tabulation point
     size_t j = random.randBin(tabCDF[i]);
-    double lo = tabs[j-1]; // first s-tabulation point below min(s_kin) = (2 me c^2)^2;
+    double lo = tabs[j-1]; // first s-tabulation point below min(s_kin); // maybe I should add the energy threshold
     // ensure physical value with the threshold, for instance double lo = std::max(4 * mec2 * mec2, tabs[j-1]);
     double hi = tabs[j];
     double s = lo + random.rand() * (hi - lo);

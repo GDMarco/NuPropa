@@ -13,6 +13,7 @@ using namespace crpropa;
 
 Channels::Channels() {};
 
+// maybe we need to code the interaction, as Rhorry did
 Channels::Channels(std::vector<std::string> interactionChannels, std::vector<std::vector<int>> productsID, std::vector<bool> active, std::string interactionFolderPath) {
     
     if (interactionChannels.size() != active.size())

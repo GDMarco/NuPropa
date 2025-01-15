@@ -202,3 +202,37 @@ double sigma_nu_incl(double shat, int chan){
         if( chan == 9 ) return F0(shat,12);
         return 0.0;
 }
+
+
+// The neutrino + photon > W + l, cross-section Seckl 9709290 - Eq. (2)
+
+double sigma_Wl_incl(double shat, int chan){
+
+        double msql(0.);
+
+        if( chan == 28 or chan == 31 ){
+                msql = pow(me,2);
+        }
+        else if( chan == 29 or chan == 32 ){
+                msql = pow(mm,2);
+        }
+        else if( chan == 30 or chan == 33 ){
+                msql = pow(mtau,2);
+        }
+        else{
+                cerr << "sigma_Wl_incl: unsupported channel " << chan << endl;
+                abort();
+        }
+
+        double shat_min = pow( mw + sqrt(msql), 2 );
+        if( shat < shat_min ) return 0.0;
+
+        double y = shat / pow(mw,2);
+
+        double sigma = ( 2. * ( 1. - 1./y ) * ( 1. + 2. / pow(y,2) - 1. / pow(y,2) * log(y) )
+                + 1. / y * ( 1. - 2. / y + 2. / pow(y,2) ) * log( pow(mw,2) / msql * pow( y - 1.,2) / y ) );
+
+        return sqrt(2.) * ALPHA.real() * gf * sigma * hbarc2;
+}
+
+

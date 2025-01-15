@@ -30,17 +30,18 @@ private:
     
     int neutrinoFieldID = 12; // check the initialization!
     
-    //std::vector<std::vector<double>> tabEnergy; // 4 columns table depending on the neutrino flavour and number, in initRate they should be built properly
-    // mutable std::vector<std::vector<double>> tabRate;
+    std::vector<std::vector<double>> tabEnergy; // 4 columns table depending on the neutrino flavour and number, in initRate they should be built properly
+    mutable std::vector<std::vector<double>> tabRate;
     
-    // std::vector<std::vector<double>> tabE;
-    // std::vector<std::vector<double>> tabs;
-    // std::vector<std::vector<std::vector<double>>> tabCDF;
-    // mutable std::vector<std::vector<int>> tabProductsID;
-    // mutable std::vector<int> selectedProductsID;
+    std::vector<std::vector<double>> tabE;
+    std::vector<std::vector<double>> tabs;
+    std::vector<std::vector<std::vector<double>>> tabCDF;
+    mutable std::vector<std::vector<int>> tabProductsID;
+    mutable std::vector<int> selectedProductsID;
+    mutable int selectedChannelIndex;
     
-    // std::unordered_map<int, std::string> interactionDictionary;
-    // mutable std::vector<std::vector<double>> channelProbability; // to be sync with interactionDictionary
+    std::unordered_map<int, std::string> interactionDictionary;
+    mutable std::vector<std::vector<double>> channelProbability; // to be sync with interactionDictionary
 public:
     /// The parent's constructor need to be called on initialization!
     NeutrinoAntineutrinoInteraction(ref_ptr<NeutrinoField>, ref_ptr<Channels> channels, bool haveSecondaries, double limit); // double thinning = 0,
