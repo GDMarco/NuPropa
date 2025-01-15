@@ -86,7 +86,6 @@ void read_arguments(int argc, char* argv[], int &seed, int &analysis, int &ichan
 
 
 // Rather than an interface to an external numerical integrator, we can also just supply the usual integration variable
-// variable e.g. "cos_theta"
 double dsigma_Interface_2to2(double s12, std::string variable, double var_value, int channel_number ){
 
 	// Appropriate 2to2 channel? should be < 100
