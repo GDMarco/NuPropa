@@ -166,9 +166,6 @@ double dsigma_Interface_2to2(double s12, std::string variable, double var_value,
   Kinematics.set_flux( 2.0 * s12 );
   // Apply analysis cuts (check if phase-space point passes cuts or not)
 	// Check if the phase-space point passes any differential selections
-	if( !Kinematics.get_cuts() ){
-		return 0;
-	}
 
 	// If the phase-space point passes any restrictions, evaluate d sigma / d costh in pb
 	return dsigma_channels( Kinematics, channel ) * hbarc2;
@@ -208,6 +205,7 @@ int main(int argc, char *argv[])
 	// Print available channels
 	print_channels();
 
+	bool active_virtual;
 	// Now read the specific set of command line arguments
 	read_arguments(argc,argv,seed_cache,isetup,channel,pdg_projectile,active_virtual);	
 
@@ -221,12 +219,6 @@ int main(int argc, char *argv[])
 
 	// Print main program settings
 	print_settings();
-
-	// Initialise recola settings
-	init_recola();
-
-	// Initialises the process registration and constructs <int,str> map
-	init_recola_processes();
 
 	////////////
 	// Setups //
@@ -265,112 +257,33 @@ int main(int argc, char *argv[])
   gettimeofday(&t0,NULL);
 
 
-  // Fiducial results for isetup < 3
-  if( isetup == 0 ){
-		// Run a test integral, returns an array with two entries < integral, error >, accessed via test_setup[0] and test_setup[1] respectively.
-		array<double,2> sigma_fiducial = {0.};
-		//			
-
-		// Output the results
-		cout << "Integral = " << sigma_fiducial[0] << endl;
-		cout << "Error = " << sigma_fiducial[1] << endl;	
-
-		cout << sigma_Wl_incl( Ecms2, channel ) << endl;
-
-		// cout << sigma_nu_incl( Ecms2, channel ) << endl;
-
-		// Save this information to the file
-		ofile_results << "# Sigma Fiducial: sigma\terror\tsigma_analytic\tratio" << endl;
-
-		// Include a function which writes all relevant information to the text file
-		ofile_results << sigma_fiducial[0] << "\t" << sigma_fiducial[1] << "\t" << sigma_nu_incl(Ecms2,channel) << "\t" << sigma_fiducial[0]/sigma_nu_incl(Ecms2,channel) << endl;
-	}
-
-	// Set up the energy scan
-	if( isetup == 1 ){
-
-		// Either derive Ecms for a varying Enu, or directly fix Ecms
-
-		// Gaetano look at 10^8 eV^2 > 10^24 eV^2
-		// Corresponds to 10^4 eV > 10^12 eV: 
-		double Ecms_low = 1e-7;
-		double Ecms_high = 1e5;
-		// Number of bins to consider
-		int n_bins = 500;
-		vector<double> Ecms_values = linspace( log(Ecms_low),log(Ecms_high), n_bins);
-		// Note, the cross-sections plateau above 5x10^3 GeV
-		// ^^^^^^^^^^^^^^^^^^^^^^^
-
-		// Vector to store the computed cross-section
-		vector< array<double,2> > sigma;
-		for( int i(0); i < n_bins; i++ ){
-			// Select Ecms
-			Ecms = exp(Ecms_values[i]);
-			Ecms2 = pow(Ecms,2);
-			// Compute the cross-section
-			array<double,2> sigma_incl = {0.};
-			// Save the results in the vector
-			sigma.push_back( sigma_incl );
-		}
-
-		ofile_results << "# Ecms\tsigma[pb]\tsigma_error[pb]\tsigma_analytic[pb]\tratio\n";
-		// Write the results to the file
-		for( unsigned int i=0; i < sigma.size(); i++ ){
-		// for( auto i: sigma ){
-			array<double,2> sig = sigma[i];
-
-			// For performing some analytic checks: channels (1,2,6,9)
-			if( channel == 1 or channel == 2 or channel == 6 or channel == 9 ){
-				Ecms2 =	pow( exp(Ecms_values[i]), 2);
-				double sigma_analytic = sigma_nu_incl(Ecms2,channel);
-				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << "\t" << sigma_analytic << "\t" << sig[0]/sigma_analytic << endl;
-			}
-			else if( channel >= 28 and channel <= 33 ){
-				Ecms2 =	pow( exp(Ecms_values[i]), 2);
-				double sigma_analytic = sigma_Wl_incl(Ecms2,channel);
-				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << "\t" << sigma_analytic << "\t" << sig[0]/sigma_analytic << endl;
-
-			}
-			else{
-				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << endl;
-			}
-
-		}		
-	}
-
 
 
   // Differential cross-section in dcosth_13 at fixed-energy
-  if( isetup == 2 ){
+  if( isetup == 0 ){
 
   	// Perform the differential cross-section in dcosth_13
 		double costh13_low = -1;
 		double costh13_up = +1.;
 		// Number of bins to consider
-		int n_bins = 200;
+		int n_bins = 5;
 		vector<double> costh13_values = linspace( costh13_low, costh13_up, n_bins);
 
 
-		active_costh13_min = true;
-		active_costh13_max = true;
+		bool active_costh13_min = true;
+		bool active_costh13_max = true;
 		for( int ibin = 0; ibin < (n_bins-1); ibin++){
 
-			costh13_min = costh13_values[ibin];
-			costh13_max = costh13_values[ibin+1];
+			double costh13_min = costh13_values[ibin];
+			double costh13_max = costh13_values[ibin+1];
 
 			// continue;
 			double costh13_cen = ( costh13_min + costh13_max ) / 2.;
-			double bin_width = costh13_max - costh13_min;
-
-
-			// Compute the differential cross-section within a bin
-			array<double,2> dsigma_diff = {0.};
 
 			// Compute analytically at the bin centre
 			double dsigma_analytic = dsigma_Interface_2to2(Ecms2, "costh13_com", costh13_cen, channel );
 
-			cout << "Ratio of the results\n\n\n" << endl;
-			cout << (dsigma_diff[0] / bin_width) / dsigma_analytic << endl;
+			cout << dsigma_analytic << endl;
 		}
 
 	}

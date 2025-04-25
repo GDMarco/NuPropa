@@ -5,7 +5,6 @@
 #include "var.hh"
 #include "tools.hh"
 #include "ME2_Analytic.hh"
-#include "recola.hpp"
 // Scalar one-loop integrals from OneLOop external libraries
 // #include "cavh_olo.h" // Link to OneLOop
 
@@ -1100,36 +1099,6 @@ if( !is_neutrino(f1) ){
 }
 
 
-// An interface to recola squared amplitudes
-double ME2_Analytic::compute_process_recola(KinematicData &Kin, int process, bool virt){
-	// First translate the Kinematic data
-	int n = Kin.length();
-	// Now construct the momentum set
-	double pset[n][4];
-	for( int i = 0; i < n; i++){
-		for( int j = 0; j < 4; j++)
-			pset[i][j] = Kin.p(i+1).pi(j);
-	}
-
-	// for( int i = 0; i < n; i++)
-	// 	cout << pset[i][0] << " " 
-	// 		 << pset[i][1] << " "
-	// 		 << pset[i][2] << " "
-	// 		 << pset[i][3] << "\n";
-	string order = (virt)? "NLO":"LO";
-
-	double temp[2];
-	Recola::compute_process_rcl(process,pset,order,temp);
-	// Return the sum of squared amplitude at LO and NLO
-	if( order == "LO" ) return temp[0];
-	// Return just 2 Re | M1 M0 |, obtain with lower stat. precision for efficiency
-	else{
-		return temp[1];
-	}
-
-	// |M0|^2 + 2 Re | M1 M0 |
-	// if( order == "NLO" ) return temp[0]+temp[1];
-}
 
 
 

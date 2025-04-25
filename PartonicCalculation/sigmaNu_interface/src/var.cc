@@ -6,7 +6,6 @@
 #include <complex>
 #include <array>
 #include "var.hh"
-#include "recola.hpp"
 
 using namespace std;
 using namespace Variables;
@@ -14,12 +13,11 @@ using namespace Variables;
 // Declaration of all the external variables from var.hh
 // std::string Variables::s_process, Variables::s_target, Variables::s_projectile, Variables::s_correction;
 
-// Process map for internal processes and recola interface
-std::map<int,std::string> Variables::process_map, Variables::process_map_rcl;
+// Process map for internal processes
+std::map<int,std::string> Variables::process_map;
 // Channel selection, then PDG of the neutrino projectile and outgoing fermion line (via particle 4)
 int Variables::channel, Variables::pdg_projectile;
 // Recola interface
-bool Variables::active_recola;
 // Some integration options (cuba dimensions, treatment of resonances)
 int Variables::cuba_dimensions;
 
@@ -30,8 +28,6 @@ std::complex<double> Variables::gRl, Variables::gRd, Variables::gRu;
 double Variables::ALPHAS;
 // Global scales
 double Variables::muf_var, Variables::mur_var, Variables::mu0, Variables::mu_loop;
-// Virtual
-bool Variables::active_virtual;
 // Recola interface
 // Some flavour info for QCD
 int Variables::nf_as, Variables::nf_pdf;
@@ -41,14 +37,7 @@ double Variables::Ecms, Variables::Ecms2;
 
 int Variables::scale_opt;
 
-//// Neutrino cuts/selections
 
-// pT
-bool Variables::active_pTnu_min,	Variables::active_pTnu_max;
-double Variables::pTnu_min, 		Variables::pTnu_max;
-// costh13 scattering restrictions
-bool Variables::active_costh13_min, Variables::active_costh13_max;
-double Variables::costh13_min, Variables::costh13_max;
 
 
 
@@ -135,10 +124,6 @@ void Variables::init_default(){
 	mu0 = 100.0; // Fixed-scale if not using dynamic scale variation
 	mu_loop = 100.0; // Fixed-scale entering Loops, wave function renormalisation constants etc.
 
-	// Whether or not recola and virtual corrections are active be default
-	active_virtual = false;
-	active_recola = false;
-
 	// Initialise
 	nf_var = 5;
 	nf_pdf = 5;
@@ -146,14 +131,6 @@ void Variables::init_default(){
 
 	// Cuba dimensions
 	cuba_dimensions = 1; // number of dimensions of the integrand
-
-	// Cuts on outgoing particles: if we wish to be differential
-	active_pTnu_min = false; pTnu_min = 0.;
-	active_pTnu_max = false; pTnu_max = 0.;
-
-	// Costh13 in CoM frame
-	active_costh13_min = false; costh13_min = 0.;
-	active_costh13_max = false; costh13_max = 0.;
 
 	// Effective EW scheme
 	int ischeme_default = 1;
@@ -167,32 +144,6 @@ void Variables::print_settings(){
 	cout << "cuba_dimensions = " << cuba_dimensions << endl;
 }
 
-// A function to initialise Recola and set up parameters/scheme
-void Variables::init_recola(){
-	// Particle masses
-	Recola::set_pole_mass_z_rcl (mz,gz);
-	Recola::set_pole_mass_w_rcl (mw,gw);
-	// charged leptons
-	Recola::set_pole_mass_electron_rcl(me);
-	Recola::set_pole_mass_muon_rcl(mm,0.);
-	Recola::set_pole_mass_tau_rcl(mtau,0.);
-	// quarks
-	Recola::set_pole_mass_top_rcl(mt,0.0);
-	Recola::set_pole_mass_bottom_rcl(mb,0.0);
-	Recola::set_pole_mass_charm_rcl(mc,0.0);
-	Recola::set_pole_mass_strange_rcl(ms);
-	Recola::set_pole_mass_down_rcl(md);
-	Recola::set_pole_mass_up_rcl(mu);
-	// When to ignore fermion masses
-	Recola::set_light_fermions_rcl(0.5*me);
-
-	Recola::set_complex_mass_scheme_rcl();
-	Recola::use_gfermi_scheme_and_set_alpha_rcl( ALPHA.real() );
-
-	// Recola::set_resonant_particle_rcl ("Z");
-	// Recola::set_resonant_particle_rcl ("W+");
-	// Recola::set_resonant_particle_rcl ("W-");
-}
 
 // Function to initialise all scattering channels into a map
 void Variables::init_channels(){
@@ -298,96 +249,6 @@ void Variables::init_channels(){
 	process_map.emplace( 121, "nu_tau A -> tau- u d~");
 
 
-	// Implementation of the Recola channels as above (originally I had different str_notation)
-	// The recola map is the same as above, but with some explicit fermion names
-	// 1) nu1 + nu1 > nu1 + nu1
-	process_map_rcl.emplace( 1, "nu_e nu_e -> nu_e nu_e");
-	// 2) nu1 + nu1bar > nu1 + nu1bar
-	process_map_rcl.emplace( 2, "nu_e nu_e~ -> nu_e nu_e~");
-	// 3) nu1bar + nu1bar > nu1bar + nu1bar
-	process_map_rcl.emplace( 3, "nu_e~ nu_e~ -> nu_e~ nu_e~");
-	// 4) nu1bar + nu1 > nu1bar + nu1
-	process_map_rcl.emplace( 4, "nu_e~ nu_e -> nu_e~ nu_e");
-	// mixed-flavour channels
-	// 5) nu1 + nu2 > nu1 + nu2
-	process_map_rcl.emplace( 5, "nu_e nu_mu -> nu_e nu_mu");
-	// 6) nu1 + nu2bar > nu1 + nu2bar
-	process_map_rcl.emplace( 6, "nu_e nu_mu~ -> nu_e nu_mu~");
-	// 7) nu1bar + nu2 > nu1bar + nu2
-	process_map_rcl.emplace( 7, "nu_e~ nu_mu -> nu_e~ nu_mu");
-	// 8) nu1bar + nu2bar > nu1bar + nu2bar
-	process_map_rcl.emplace( 8, "nu_e~ nu_mu~ -> nu_e~ nu_mu~");
-	// neutrino annihilation channels (3 channels)
-	// 9) nu1 + nu1bar > nu2 + nu2bar
-	process_map_rcl.emplace( 9, "nu_e nu_e~ -> nu_mu nu_mu~");
-	// 10-12) nu1 + nu1bar > l1 + l1bar (provide outgoing fermion PDG)
-	process_map_rcl.emplace( 10, "nu_e nu_e~ -> e- e+");
-	process_map_rcl.emplace( 11, "nu_mu nu_mu~ -> mu- mu+");
-	process_map_rcl.emplace( 12, "nu_tau nu_tau~ -> tau- tau+");
-	// 13-18) nu1 + nu2bar > l1 + l2bar 
-	process_map_rcl.emplace( 13, "nu_e nu_mu~ -> e- mu+");
-	process_map_rcl.emplace( 14, "nu_e nu_tau~ -> e- tau+");
-	process_map_rcl.emplace( 15, "nu_mu nu_e~ -> mu- e+");
-	process_map_rcl.emplace( 16, "nu_mu nu_tau~ -> mu- tau+");
-	process_map_rcl.emplace( 17, "nu_tau nu_e~ -> tau- e+");
-	process_map_rcl.emplace( 18, "nu_tau nu_mu~ -> tau- mu+");
-	// 19-24) nu1 + nu1bar > q + qbar
-	process_map_rcl.emplace( 19, "nu_e nu_e~ -> d d~");
-	process_map_rcl.emplace( 20, "nu_e nu_e~ -> u u~");
-	process_map_rcl.emplace( 21, "nu_e nu_e~ -> s s~");
-	process_map_rcl.emplace( 22, "nu_e nu_e~ -> c c~");
-	process_map_rcl.emplace( 23, "nu_e nu_e~ -> b b~");
-	process_map_rcl.emplace( 24, "nu_e nu_e~ -> t t~");
-	// 25-27) nu1 + nu1bar > l + lbar
-	process_map_rcl.emplace( 25, "nu_mu nu_mu~ -> e- e+");
-	process_map_rcl.emplace( 26, "nu_e nu_e~ -> mu- mu+");
-	process_map_rcl.emplace( 27, "nu_e nu_e~ -> tau- tau+");
-	// Onshell W processes
-	// 28-30) nu1 + A > W+ l-
-	process_map_rcl.emplace( 28, "nu_e A -> W+ e-");
-	process_map_rcl.emplace( 29, "nu_mu A -> W+ mu-");
-	process_map_rcl.emplace( 30, "nu_tau A -> W+ tau-");
-	// 31-33) nu1bar + A > W- l+
-	process_map_rcl.emplace( 31, "nu_e~ A -> W- e+");
-	process_map_rcl.emplace( 32, "nu_mu~ A -> W- mu+");
-	process_map_rcl.emplace( 33, "nu_tau~ A -> W- tau+");
-
-	// 99) e- e+ > Q Qbar [testing channel]
-	process_map_rcl.emplace( 99, "e- e+ -> c c~");		
-
-	// neutrino + photon scattering NC exchanges
-	// 101-103) nu1  + A > nu1 + l2 + l2bar
-	process_map_rcl.emplace( 101, "nu_mu A -> nu_mu e- e+");
-	process_map_rcl.emplace( 102, "nu_e A -> nu_e mu- mu+");
-	process_map_rcl.emplace( 103, "nu_e A -> nu_e tau- tau+");
-	// 104-109) nu1 + A > nu1 + q + qbar
-	process_map_rcl.emplace( 104, "nu_e A -> nu_e d d~");
-	process_map_rcl.emplace( 105, "nu_e A -> nu_e u u~");
-	process_map_rcl.emplace( 106, "nu_e A -> nu_e s s~");
-	process_map_rcl.emplace( 107, "nu_e A -> nu_e c c~");
-	process_map_rcl.emplace( 108, "nu_e A -> nu_e b b~");
-	process_map_rcl.emplace( 109, "nu_e A -> nu_e t t~");
-
-	// neutrino + photon scattering CC exchanges
-	// 110-115) nu1  + gamma > l1 + nu2 + l2~ 
-	process_map_rcl.emplace( 110, "nu_e A -> e- nu_mu mu+");
-	process_map_rcl.emplace( 111, "nu_e A -> e- nu_tau tau+");
-	process_map_rcl.emplace( 112, "nu_mu A -> mu- nu_e e+");
-	process_map_rcl.emplace( 113, "nu_mu A -> mu- nu_tau tau+");
-	process_map_rcl.emplace( 114, "nu_tau A -> tau- nu_e e+");
-	process_map_rcl.emplace( 115, "nu_tau A -> tau- nu_mu mu+");
-
-	// neutrino + photon same lepton flavour cases (1 channel + c.c.)
-	// 116-119) nu1  + A > l1 + nu1 + l1~
-	process_map_rcl.emplace( 116, "nu_e A -> e- nu_e e+");
-	process_map_rcl.emplace( 117, "nu_mu A -> mu- nu_mu mu+");
-	process_map_rcl.emplace( 118, "nu_tau A -> tau- nu_tau tau+");		
-
-	// .... quark channels just consider massless quarks
-	// 119-121) 
-	process_map_rcl.emplace( 119, "nu_e A -> e- u d~");
-	process_map_rcl.emplace( 120, "nu_mu A -> mu- u d~");
-	process_map_rcl.emplace( 121, "nu_tau A -> tau- u d~");
 
 }
 
@@ -620,28 +481,6 @@ void Variables::print_channels(){
 	for( auto element: process_map){
 		cout << element.first << " " << element.second << endl;
 	}
-}
-
-// Register and generate processes with recola
-void Variables::init_recola_processes(){
-	// Define/register
-	for( auto &element: process_map_rcl ){
-
-		// For all 2to2 processes, register as NLO (to provide access to the virtual corr.)		
-		string order = "LO";
-		if( element.first < 100 ) order = "NLO";
-		else{
-			order = "LO";
-		}
-
-		// Speed up by only defining requested channel?
-		// if( element.first != channel ) continue;
-
-		Recola::define_process_rcl(element.first,element.second,order);
-		// First element is the integer, second is the string process declaration
-	}
-	// Generate
-	Recola::generate_processes_rcl();
 }
 
 

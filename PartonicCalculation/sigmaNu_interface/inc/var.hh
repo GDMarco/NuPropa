@@ -104,8 +104,7 @@ namespace Variables {
 	// mu for loop integrals
 	extern double mu_loop;
 	// When computing viritual corrections for specific channels
-	extern bool active_virtual;
-	extern bool active_recola;
+
 	// Multiplication for mu_0 scale
 	extern double muf_var, mur_var;
 
@@ -125,14 +124,6 @@ namespace Variables {
 	// extern std::string s_process, s_target, s_projectile;
 	// extern std::string s_correction; // LO, R, V, VV, RV, RR
 
-	//// Any cuts on final-state?
-	// pT of neutrino
-	extern bool active_pTnu_min,	active_pTnu_max;
-	extern double pTnu_min, 		pTnu_max;
-
-	// CoM frame scattering
-	extern bool active_costh13_min, active_costh13_max;
-	extern double costh13_min,		costh13_max;
 
 	// Function to initialise Recola processes
 	void init_channels();
@@ -144,10 +135,10 @@ namespace Variables {
 
 
 	extern int channel, pdg_projectile;
-	void init_recola_processes();
+	// void init_recola_processes();
 	// Construct a map between process strings and integers
 	extern std::map<int,std::string> process_map;
-	extern std::map<int,std::string> process_map_rcl;
+	// extern std::map<int,std::string> process_map_rcl;
 
 }  
 

@@ -55,9 +55,6 @@ namespace ME2_Analytic {
     extern double nu1gamma_l1nu1l1x(int i1, int i2, int i3, int i4, int i5, KinematicData &Kin, int f1, int f2);
 
 
-    // Recola interface
-    extern double compute_process_recola(KinematicData &Kin, int proc, bool virt);
-
     // Perhaps update to provide it with fixed length array?
 
 
