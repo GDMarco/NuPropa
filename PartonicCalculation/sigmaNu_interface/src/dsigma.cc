@@ -21,7 +21,6 @@ double dsigma_channels( KinematicData &Kin, int channel_id ){
         // Thus, here we evaluate |M|^2 given a channel id
         double ME2(0.);
 
-
         // All equal flavour results obtained from |M|^2 for nu1 + nu1 > nu1 + nu1
         // 1) nu1 + nu1 > nu1 + nu1
         if( channel_id == 1 )  ME2 = ME2_Analytic::nu1nu1_nu1nu1(1,2,3,4, Kin, pdg_projectile, 12);

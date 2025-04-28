@@ -10,44 +10,21 @@
 using namespace std;
 using namespace Variables;
 
-// Declaration of all the external variables from var.hh
-// std::string Variables::s_process, Variables::s_target, Variables::s_projectile, Variables::s_correction;
-
 // Process map for internal processes
 std::map<int,std::string> Variables::process_map;
 // Channel selection, then PDG of the neutrino projectile and outgoing fermion line (via particle 4)
 int Variables::channel, Variables::pdg_projectile;
-// Recola interface
-// Some integration options (cuba dimensions, treatment of resonances)
-int Variables::cuba_dimensions;
 
 // Global variables/couplings etc.
 std::complex<double> Variables::ALPHA, Variables::SW2;
 std::complex<double> Variables::gLl, Variables::gLd, Variables::gLu, Variables::gLnu;
 std::complex<double> Variables::gRl, Variables::gRd, Variables::gRu;
-double Variables::ALPHAS;
+// double Variables::ALPHAS;
 // Global scales
 double Variables::muf_var, Variables::mur_var, Variables::mu0, Variables::mu_loop;
-// Recola interface
-// Some flavour info for QCD
-int Variables::nf_as, Variables::nf_pdf;
-double Variables::nf_var;
 // Global CoM and beam definition
 double Variables::Ecms, Variables::Ecms2;
-
 int Variables::scale_opt;
-
-
-
-
-
-// Function to update the cuba integration dimenions for every implemented process
-void Variables::update_process_dimensions(){
-	// 2to2 processes registered with < 100
-	// 2to3 processes registered with > 100
-	// Fixes the phase-space integration dimensions
-	cuba_dimensions = (channel < 100)? 1: 4;
-}
 
 // Initialise the Electroweak scheme
 void Variables::init_scheme(int ischeme){
@@ -124,14 +101,6 @@ void Variables::init_default(){
 	mu0 = 100.0; // Fixed-scale if not using dynamic scale variation
 	mu_loop = 100.0; // Fixed-scale entering Loops, wave function renormalisation constants etc.
 
-	// Initialise
-	nf_var = 5;
-	nf_pdf = 5;
-	nf_as = 5;
-
-	// Cuba dimensions
-	cuba_dimensions = 1; // number of dimensions of the integrand
-
 	// Effective EW scheme
 	int ischeme_default = 1;
 	init_scheme(ischeme_default);
@@ -141,7 +110,6 @@ void Variables::init_default(){
 void Variables::print_settings(){
 	cout << "\033[0;31m Summary of global settings\033[0m" << endl;
 	cout << "channel = " << channel << endl;
-	cout << "cuba_dimensions = " << cuba_dimensions << endl;
 }
 
 

@@ -39,15 +39,14 @@ void print_usage() {
 }
 
 // Introduce a more user friendly interface
-void read_arguments(int argc, char* argv[], int &seed, int &analysis, int &ichan, int &flav_nu, bool &virt) {
+void read_arguments(int argc, char* argv[], int &seed, int &analysis, int &ichan, int &flav_nu ) {
 	// provide it length 4 integer array for PDG codes (these must all be entered)
-	const char* const short_options = "s:a:n:c:v:h:";
+	const char* const short_options = "s:a:n:c:h:";
 	const struct option long_options[] = { { "help", 0, NULL, 'h' },
 		   { "seed", 1, NULL,  's' },
 		   { "analysis", 1, NULL,  'a' },
 		   { "pdg_nu",1, NULL, 'n' },
 		   { "chan", 1, NULL,  'c' },
-		   { "virt", 1, NULL,  'v' },		   
 		   { NULL, 0, NULL, 0 } };
 	int next_option;
 	do {
@@ -65,9 +64,6 @@ void read_arguments(int argc, char* argv[], int &seed, int &analysis, int &ichan
 			case 'n':
 				flav_nu = stoi(optarg, NULL);
 				break;
-			case 'v':
-				virt = stoi(optarg, NULL);
-				break;
 			case 'h':
 				print_channels();
 				abort();																
@@ -82,13 +78,23 @@ void read_arguments(int argc, char* argv[], int &seed, int &analysis, int &ichan
 }
 
 
+
+// The following function acts as the main interface between all expressions for |M|^2 and dsigma / dX which were implented in the previous code
+// The implementation of dsigma and |M|^2 relied on the construction of a KinematicData structure (four momentum of the scattering particles)
+// This interface takes input values of s12, and some differential variable (e.g. t_hat or costh_CoM)
+// From here it builds the kinematic data structure (explicit four momentum representation) and evaluates dsigma / dX
+
+// After giving it the input variables (which fix the 2to2 scattering)
+// It just needs to know the channel which is being evaluated "channel_number"
+// The full list of channels are seen in "print_channels()"
+
 // Rather than an interface to an external numerical integrator, we can also just supply the usual integration variable
 double dsigma_Interface_2to2(double s12, std::string variable, double var_value, int channel_number ){
 
 	// Appropriate 2to2 channel? should be < 100
 	if( channel > 100 ){
 		cerr << "dsigma_Interface_2to2: requested channel " << channel << endl;
-		cerr << "not a supported 2to2 process\n";
+		cerr << "not a supported 2to2 process currently\n";
 		abort();
 	}
 
@@ -114,6 +120,7 @@ double dsigma_Interface_2to2(double s12, std::string variable, double var_value,
 	int pdgs[nfinal] = {0};
 
 	// Hardcode a void function for the final state particles, pass by ref
+	// 1) This initalises the particle masses (by channel)
 	init_channel_information( channel, pdgs, masses );
 
 	// Sanity check on threshold of final-state particles
@@ -123,6 +130,10 @@ double dsigma_Interface_2to2(double s12, std::string variable, double var_value,
 	if( pow(mfinal,2) > s12 ){
 		return 0.;
 	}
+
+	//////////////////////////////////////////////////////
+	// 2) Construct p1 and p2, aligned along the z-axis //
+	//////////////////////////////////////////////////////	
 
 	// Construct the kinematics of the scattering process from the provided inputs
 	// Incoming particles are always massless.
@@ -136,7 +147,12 @@ double dsigma_Interface_2to2(double s12, std::string variable, double var_value,
 	double E4 = CoM_Kins[1];
 	double mod_p3 = CoM_Kins[2];
 
-	// Variable dependent implementation here
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 3) The last differential quantity "variable" and its value "var_value" then fixes the outoing p3, p4 momenta //
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	// Example a) using dcosth_CoM [-1,1] to fix the scattering
+	// cos_th approach: Variable dependent implementation here
 	double costh_13(0.), sinth_13(0.);
 	if( variable == "costh13_com" ){
 		costh_13 = var_value;
@@ -147,24 +163,39 @@ double dsigma_Interface_2to2(double s12, std::string variable, double var_value,
 	}
 	sinth_13 = sqrt( (1.+costh_13)*(1.-costh_13) );
 
-  // This now defines the particle four momenta in partonic CoM frame
-  p4vec p3_CoM ( E3, 0, mod_p3*sinth_13, mod_p3*costh_13 );
-  p4vec p4_CoM ( E4, 0,-mod_p3*sinth_13,-mod_p3*costh_13 );
-  // Now place these momenta in the KinematicData structure to evaluate the |M|^2 values for any of processes
-  KinematicData Kinematics(4);
-  // Add partonic CoM momenta
-  Kinematics.set_pi( p1_CoM, 1 );
-  Kinematics.set_pi( p2_CoM, 2 );
-  Kinematics.set_pi( p3_CoM, 3 );
-  Kinematics.set_pi( p4_CoM, 4 );
-  double scale = 1.0;//KinematicScales( Kinematics, scale_opt );
-  Kinematics.set_muf( scale * muf_var );
-  Kinematics.set_mur( scale * mur_var );
-  // Have used that lambda^{1/2}(1,s_3,s_4) = 2 |p3| / sqrt(s12) in partonic CoM frame, m12=sqrt(s12)
-  double ps_factor = (2.*M_PI) / ( 2. * pow(4.*M_PI,2) ) * ( 2. * mod_p3 / m12 );
-  Kinematics.set_weight( ps_factor );
-  Kinematics.set_flux( 2.0 * s12 );
-  // Apply analysis cuts (check if phase-space point passes cuts or not)
+	// Example b) using the mandelstam "t_hat"
+	// t_hat = - (p1 - p3)^2 - m1^2 - m3^3
+	// One must check the value provided is physically consistent
+	// t_hat = -s13 = - 2 ( E1 E3 - |p1||p3| costheta_13 )
+	// Max and minimum allowed values depend on the particle masses (which is channel dependent)
+	// Working in the CoM frame, we can say that:
+	// Assuming massless incoming particles
+	// E1 = sqrt(s12)/2 = Ecms/2
+	// E3 = sqrt(s12)/2 ( 1 + m3^2 - m4^2 )
+	// |p3| = |p4| = sqrt(s12)/2 * kallen(1,m3^2/s12,m4^2/s12)^(0.5)
+	// Hence, max / min values of t_hat are:
+	// t_hat = - s13 = -2 p1.p3
+	// t_hat_{max/min} = - 2 E1 ( E3 - |p3| cos_theta ) -> - Ecms ( E3 [-/+] |p3| )
+	// t_hat_{max/min} = Ecms^2/2 ( [1+m3^2/s12-m4^2/s12] -/+ Kallen(1,m3^2/s12,m4^2/s12)^(0.5) )
+
+	// This now defines the particle four momenta in partonic CoM frame
+	p4vec p3_CoM ( E3, 0, mod_p3*sinth_13, mod_p3*costh_13 );
+	p4vec p4_CoM ( E4, 0,-mod_p3*sinth_13,-mod_p3*costh_13 );
+	// Now place these momenta in the KinematicData structure to evaluate the |M|^2 values for any of processes
+	KinematicData Kinematics(4);
+	// Add partonic CoM momenta
+	Kinematics.set_pi( p1_CoM, 1 );
+	Kinematics.set_pi( p2_CoM, 2 );
+	Kinematics.set_pi( p3_CoM, 3 );
+	Kinematics.set_pi( p4_CoM, 4 );
+	double scale = 1.0;//KinematicScales( Kinematics, scale_opt );
+	Kinematics.set_muf( scale * muf_var );
+	Kinematics.set_mur( scale * mur_var );
+	// Have used that lambda^{1/2}(1,s_3,s_4) = 2 |p3| / sqrt(s12) in partonic CoM frame, m12=sqrt(s12)
+	double ps_factor = (2.*M_PI) / ( 2. * pow(4.*M_PI,2) ) * ( 2. * mod_p3 / m12 );
+	Kinematics.set_weight( ps_factor );
+	Kinematics.set_flux( 2.0 * s12 );
+	// Apply analysis cuts (check if phase-space point passes cuts or not)
 	// Check if the phase-space point passes any differential selections
 
 	// If the phase-space point passes any restrictions, evaluate d sigma / d costh in pb
@@ -184,17 +215,17 @@ int main(int argc, char *argv[])
 	init_channels();
 	if( argc < 2 ) print_usage();
 
-  // Initialise program defaults
+	// Initialise program defaults
 	init_default();
 	// Some default values
 	channel = 1;
 	pdg_projectile = 12;
-  // Initialise some process specific scales/variables
+	// Initialise some process specific scales/variables
 	scale_opt = -1;
 	// Scale options
 	mur_var = 1.;
-	muf_var = 1.;	
-  mu0 = mz;
+	muf_var = 1.;
+	mu0 = mz;
 	mu_loop = 100.;	// No results depend on mu_reg value
 	// Set the collision environment (pp collisions at LHC 13 TeV)
 	Ecms = 1e5;
@@ -205,17 +236,8 @@ int main(int argc, char *argv[])
 	// Print available channels
 	print_channels();
 
-	bool active_virtual;
 	// Now read the specific set of command line arguments
-	read_arguments(argc,argv,seed_cache,isetup,channel,pdg_projectile,active_virtual);	
-
-	if( active_virtual and channel >= 10 ){
-		cout << "Virtual should only be active for channels 1-9\n";
-		abort();
-	}
-
-	// Update cuba dimensions according to the process
-	update_process_dimensions();
+	read_arguments(argc,argv,seed_cache,isetup,channel,pdg_projectile);	
 
 	// Print main program settings
 	print_settings();
@@ -225,67 +247,57 @@ int main(int argc, char *argv[])
 	////////////
 	// Setup 0, most simple inclusive LHC setup
 	if( isetup == 0 ){
-		cout << "Inclusive cross-section at fixed Ecms = " << Ecms << endl;
+		cout << "Implement a dcostheta scan at fixed ECMS\n";
 	}
 	else if( isetup == 1 ){
-		cout << "Inclusive cross-section for an energy scan in Ecms\n";
-	}
+		cout << "Implement a dt_hat scan at fixed ECMS\n";
 
+	}
 
 	//////////////////////////////
 	// Store cross-section data //
 	//////////////////////////////
-	const std::string s_analysis[3] = {"SigmaIncl","SigmaIncl_Ecms","dSigmaCosth13"};
-  string outfile = s_analysis[isetup]+"_channel"+to_string(channel);
-  // If active virtual, add NLO tag to file
-  if( active_virtual ) outfile = outfile +"_virt";
-  ofstream ofile_results;
-  // open file
-  ofile_results.open(outfile+"_s"+to_string(seed_cache)+".txt");
-  // save general program settings
+	const std::string s_analysis[3] = {"dsigdcosth","dsigdt"};
+	string outfile = s_analysis[isetup]+"_channel"+to_string(channel);
+	ofstream ofile_results;
+	// open file
+	ofile_results.open(outfile+"_s"+to_string(seed_cache)+".txt");
+	// save general program settings
 	write_settings(ofile_results,"");
 
 	// Also write the scattering process
 	ofile_results << endl << "# channel_id = " << channel << endl;
-	ofile_results << "# active_virtual = " << active_virtual << endl;
 	ofile_results << "# process  = " << process_map.at(channel) << endl;
 
 	/////////////////
 	// Start timer //
 	/////////////////	
-  struct timeval t0, t1;
-  gettimeofday(&t0,NULL);
+	struct timeval t0, t1;
+	gettimeofday(&t0,NULL);
 
 
 
 
-  // Differential cross-section in dcosth_13 at fixed-energy
-  if( isetup == 0 ){
+	// Differential cross-section in dcosth_13 at fixed-energy
+	if( isetup == 0 ){
 
-  	// Perform the differential cross-section in dcosth_13
+		// Perform the differential cross-section in dcosth_13
 		double costh13_low = -1;
 		double costh13_up = +1.;
 		// Number of bins to consider
-		int n_bins = 5;
-		vector<double> costh13_values = linspace( costh13_low, costh13_up, n_bins);
+		int n_bins = 100;
+		vector<double> costh13_values = linspace( costh13_low, costh13_up, n_bins+1);
 
-
-		bool active_costh13_min = true;
-		bool active_costh13_max = true;
-		for( int ibin = 0; ibin < (n_bins-1); ibin++){
-
+		for( int ibin = 0; ibin < n_bins; ibin++){
 			double costh13_min = costh13_values[ibin];
 			double costh13_max = costh13_values[ibin+1];
-
-			// continue;
+			// bin centre
 			double costh13_cen = ( costh13_min + costh13_max ) / 2.;
-
 			// Compute analytically at the bin centre
 			double dsigma_analytic = dsigma_Interface_2to2(Ecms2, "costh13_com", costh13_cen, channel );
+			ofile_results << costh13_cen << "\t" << dsigma_analytic << endl;
 
-			cout << dsigma_analytic << endl;
 		}
-
 	}
 
 

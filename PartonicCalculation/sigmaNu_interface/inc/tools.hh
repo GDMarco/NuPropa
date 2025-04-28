@@ -58,19 +58,8 @@ public:
 // Useful kinematic functions
 double kallen(const double, const double, const double);
 double dotp4(p4vec &, p4vec &);
-double dy_ij(p4vec &, p4vec &);
-double deta_ij(p4vec &, p4vec &);
-double dphi_ij(p4vec &, p4vec &);
-// delta R = sqrt(dphi_ij^2 + dy_ij^2)
-double dR_ij(p4vec &, p4vec &);
-// Lepton specific observables
-// Collins-soper angles
-double costheta_CS(p4vec &, p4vec &);
-double phi_CS(p4vec &, p4vec &);
-// Phi-star variable
-double phistar(p4vec &, p4vec &);
-// Transverse mass
-double MT(p4vec &, p4vec &); // For W boson production
+// Centre-of-Mass kinematics for phase-space generation
+std::array<double,3> CoM_1to2_kinematics_sq(double msq_ij, double msq_i, double msq_j);
 
 // KinematicData class (contains momenta of a phase space point + other kinematic/useful info.)
 class KinematicData {
@@ -138,6 +127,8 @@ public:
 	double flux() { return this->Flux; }
 };
 
+// The general kinematic scale routine, sets the scale based on kinematics
+double KinematicScales( KinematicData &, int);
 
 // Some additional tools for setting up differential binning
 template <typename T>
@@ -151,22 +142,3 @@ std::vector<T> linspace(T a, T b, size_t N) {
     return xs;
 }
 
-std::array<double,3> CoM_1to2_kinematics_sq(double msq_ij, double msq_i, double msq_j);
-
-// A function for debugging a phase-space point
-void debug_PS_point( KinematicData & );
-
-// General function to generate kinematic data for all collision environments
-// Random numbers [], number of final state particles, masses of final state particles, n random variables to be be stored in KinematicData, collision environment
-KinematicData Generate_Phase_Space( const cubareal* rand, const int npar_out, const double *masses, const int n_random, const std::string environment );
-
-// This function is designed for massless particles:
-// inputs: random numbers, npar_in, npar_out, phasespace setup option (e.g. how the phase-space is setup)
-
-// Same as above but for fixed Ecms2
-KinematicData Gen_2to2_Massive( const cubareal*, const int, const double* );
-KinematicData Gen_2to3_Massive( const cubareal*, const int, const double* );
-KinematicData Gen_2to4_Massive( const cubareal*, const int, const double* );
-
-//// The general kinematic scale routine, sets the scale based on kinematics
-double KinematicScales( KinematicData &, int);

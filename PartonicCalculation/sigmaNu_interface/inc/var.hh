@@ -26,14 +26,13 @@ namespace Variables {
 	const double zeta2 = pisq/6.0;
 	const double zeta3 = 1.2020569031595942854;
 	const double gammaE = 0.5772156649015328606;
-	// Technical cut, a small cut for numerical dealing with numerical instablities
-	const double tech_cut = 1e-10;
-	const double m2_threshold = 1e-6; // Numerical threshold for considering particles massive/massless
-	// Gauge-boson
+
+	// Gauge-boson masses/widths
 	const double mw = 80.35797361; // Following pole values to be updated before next publication
 	const double gw = 2.084298894;
 	const double mz = 91.15348062;
 	const double gz = 2.494266379;
+
 	// Fermion-masses
 	// leptons
 	const double me = 0.5109989461e-3;
@@ -49,6 +48,7 @@ namespace Variables {
 	//Nucleons
 	const double mp = 0.9382720813;
 	const double mn = 0.9395654133;
+
 	//Fermis constant
 	const double gf = 1.16638e-5;//1.1663787e-5;
 	//Couplings
@@ -62,7 +62,7 @@ namespace Variables {
 	//Define charges
 	const double Qd = -1.0/3.0;
 	const double Qu =  2.0/3.0;
-	const double Ql = -1.0;    
+	const double Ql = -1.0; 
 	//Define complex couplings (global variables)
 	extern std::complex<double> ALPHA, SW2;
 	extern std::complex<double> gLl, gLnu, gLd, gLu;
@@ -83,19 +83,11 @@ namespace Variables {
 	// Function to initiate different EW schemes
 	void init_scheme(int);
 
-	// Function to initiate Recola settings
-	void init_recola();
-
 	// Function that will write the program settings to a text file (passed by reference)
 	void write_settings(std::ofstream &, std::string extra_info);
 
 	// Boolean for neutrino pdg code
 	bool is_neutrino(int);
-
-	// Global variable to control integration dimensions of integrands	
-	extern int cuba_dimensions;
-	// Function to assign the global variable based on channel selection
-	void update_process_dimensions();
 
 	// -1 = fixed scale, 1 = et_V
 	extern int scale_opt;
@@ -108,23 +100,14 @@ namespace Variables {
 	// Multiplication for mu_0 scale
 	extern double muf_var, mur_var;
 
-
-	// Strong coupling
-	extern double ALPHAS;
-	// QCD constants
+	// // Strong coupling
+	// extern double ALPHAS;
+	// // QCD constants
 	const double nc = 3.0;
-	const double cf = 4.0/3.0;
-	const double ca = 3.0;//Nc
-	const double tr = 1.0/2.0;
-	// Define variable nf
-	extern double nf_var;
-	extern int nf_pdf, nf_as; // Number of active flavours in pdf/alphas running
-
-	// Some process-dependent and channel dependent options
-	// extern std::string s_process, s_target, s_projectile;
-	// extern std::string s_correction; // LO, R, V, VV, RV, RR
-
-
+	// const double cf = 4.0/3.0;
+	// const double ca = 3.0;//Nc
+	// const double tr = 1.0/2.0;
+	
 	// Function to initialise Recola processes
 	void init_channels();
 	// Prints channel information

@@ -197,131 +197,6 @@ double dotp4(p4vec &pi, p4vec &pj){
     return pi.E()*pj.E()-pi.px()*pj.px()-pi.py()*pj.py()-pi.pz()*pj.pz();
 }
 
-// dy_ij = y_i = y_j
-double dy_ij(p4vec &pi, p4vec &pj){
-    return pi.rap()-pj.rap();
-}
-
-// deta_ij = eta_i - eta_j
-double deta_ij(p4vec &pi, p4vec &pj){
-    return pi.eta()-pj.eta();
-}
-
-// dphi_ij = phi_i - phi_j
-double dphi_ij(p4vec &pi, p4vec &pj){
-    double phi1 = atan2( pi.py(), pi.px() );
-    // [0,2Pi]
-    if( phi1 < 0 ) phi1 += 2*M_PI;
-    double phi2 = atan2( pj.py(), pj.px() );
-    if( phi2 < 0 ) phi2 += 2*M_PI;
-    double dphi = fabs(phi1-phi2);
-    // [0,Pi]
-    if( dphi > M_PI) dphi = 2*M_PI-dphi;
-    return dphi;
-}
-
-// dR_ij = sqrt( dphi_ij^2 + dy_ij^2 )
-double dR_ij(p4vec &pi, p4vec &pj){
-    double dy2 = pow(pi.rap()-pj.rap(),2);
-    double phi1 = atan2( pi.py(), pi.px() );
-    // [0,2Pi]
-    if( phi1 < 0 ) phi1 += 2*M_PI;
-    double phi2 = atan2( pj.py(), pj.px() );
-    if( phi2 < 0 ) phi2 += 2*M_PI;
-    double dphi = fabs(phi1-phi2);
-    // [0,Pi]
-    if( dphi > M_PI) dphi = 2*M_PI-dphi;
-    return sqrt(dy2+dphi*dphi);
-}
-
-// costheta_CS, i.e. in the Collins-Soper frame
-double costheta_CS(p4vec &lm, p4vec &lp){
-    // Construct V
-    p4vec V = lm + lp;
-    double mll = V.m();
-    double ptll = V.pT();
-    // + and - components
-    double p1p = lm.E()+lm.pz();
-    double p1m = lm.E()-lm.pz();
-    double p2p = lp.E()+lp.pz();
-    double p2m = lp.E()-lp.pz();
-    // Fix sign of pz
-    double sign_pz = 1.0;
-    if( V.pz() < 0 ) sign_pz *= -1.0;
-    //
-    return sign_pz*((p1p*p2m)-(p1m*p2p))/mll/sqrt(mll*mll+ptll*ptll);
-}
-
-// phi_CS, i.e. in the Collins-Soper frame
-// Also can compute costheta_CS this way
-double phi_CS(p4vec &lm, p4vec &lp){
-    // Construct V
-    p4vec V = lm + lp;
-    double QV2 = V.m2();
-    double QV = sqrt(QV2);
-    double PTV = V.pT();
-    double PTV2 = pow(PTV,2);
-    double XTV = sqrt(QV2+PTV2);
-    //
-    double sign_pz = 1.0;
-    if( V.pz() < 0 ) sign_pz *= -1.0;
-    // 
-    double pl_x = 
-        +PTV/QV/XTV * ( -V.E()*lm.E() +V.pz()*lm.pz() )
-        +XTV/QV/PTV * ( +V.px()*lm.px() +V.py()*lm.py() );
-    double pl_y = sign_pz/PTV * ( -V.py()*lm.px() +V.px()*lm.py() );
-    // double pl_z = sign_pz/XTV * (
-    //      -V.pz()*lm.E()
-    //      +V.E()*lm.pz() );
-    // Now evaluate cos_theta_cs, phi_cs
-    // double cos_th_cs = pl_z / sqrt( pow(pl_x,2) + pow(pl_y,2) + pow(pl_z,2) );
-    // double th_cs = atan2( sqrt( pow(pl_x,2) + pow(pl_y,2)), pl_z );
-    double phi_cs = atan2( pl_y, pl_x );
-    if( phi_cs < 0 ) phi_cs += 2.*M_PI;
-    return phi_cs;
-}
-
-// phistar variable
-double phistar(p4vec &lm, p4vec &lp){
-    double dphi = dphi_ij( lm, lp );
-    double deta = lm.rap() - lp.rap(); // eta_lm - eta_lp, massless leptons
-    double cos_th = tanh(deta/2.0); 
-    double sin_th = sqrt( (1.+cos_th)*(1.-cos_th) ); // independent of sign of deta
-    return tan( (M_PI-dphi)/2.0 ) * sin_th;
-}
-
-// mT variable, Charged Current (see 1701.07420)
-double MT(p4vec &nu, p4vec &l){
-    double dphi = dphi_ij( nu, l );
-    return sqrt(2. * nu.pT() * l.pT() * ( 1. - cos(dphi) ));
-}
-
-// Could also pass an array by reference to a void function?
-// Function for defining energies and momenta in a particle decay of the form mij -> mi + mj in the mij CoM frame
-// Forms the basis for generating particle momenta using sequences of 2-body phase spaces
-std::array<double,3> CoM_1to2_kinematics(double mij, double mi, double mj){
-    // Define dimensionless variables
-    double xi = max(0.,pow(mi/mij,2));
-    double xj = max(0.,pow(mj/mij,2));
-    // 3d array to contain Ei, Ej, |pi|
-    std::array<double,3> output = {0.};
-    // Ei = mij / 2. ( 1 + xi - xj )
-    output[0] = mij / 2. * ( 1. + xi - xj );
-    // Ej = mij / 2. ( 1 - xi + xj )
-    output[1] = mij / 2. * ( 1. - xi + xj );
-    // |pi| = |pj| = mij/2. * Kallen^{1/2}(1.,xi,xj)
-    double vel = sqrt( kallen(1.,xi,xj) );    
-    if( xi == 0.0 ){
-        vel = ( 1. - xj );
-    }
-    if( xj == 0.0 ){
-        vel = ( 1. - xi );
-    }
-    output[2] = mij / 2. * vel;    
-    // output[2] = mij / 2. * sqrt( kallen(1.,xi,xj) );
-    return output; 
-}
-
 std::array<double,3> CoM_1to2_kinematics_sq(double msq_ij, double msq_i, double msq_j){
     // Define dimensionless variables
     double xi = max(0.,msq_i/msq_ij);
@@ -350,6 +225,7 @@ std::array<double,3> CoM_1to2_kinematics_sq(double msq_ij, double msq_i, double 
     // Perform expansion?
     return output; 
 }
+
 
 
 

@@ -46,10 +46,10 @@ CXXFLAGS += $(INCLUDE_PATH)
 CXXFLAGS += "-Wl,-no_warn_duplicate_libraries"
 
 # Build all binaries
-all: $(BINDIR)/dSigma.exe
+all: $(BINDIR)/Main_Interface.exe
 
 # Test program for differential cross-section computation
-$(BINDIR)/dSigma.exe: $(SRCDIR)/wrapper_dsigma.cc $(OBJ)
+$(BINDIR)/Main_Interface.exe: $(SRCDIR)/Main_Interface.cc $(OBJ)
 	$(CXX) $(CXXFLAGS) $(OBJ) -o $@ $< $(LIBS_PATH)	
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cc
