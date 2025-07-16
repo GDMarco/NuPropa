@@ -11,7 +11,7 @@
 namespace nupropa {
 
 using namespace crpropa;
-/// A custom C++ class for interaction channels
+
 class Channels : public Referenced
 {
 private:
@@ -19,7 +19,7 @@ private:
     std::vector<std::string> interactionChannels;
     std::vector<std::vector<int>> productsID; // ID1, ID2(, ID3)
     std::vector<bool> active;
-    std::string interactionFolderPath;
+    std::string interactionFolderPath = "/Applications/CRPropa/NuNuInteractionv1/CRPropa3-data-zDep/dataOff/NeutrinoInteractions/NeutrinoAntineutrinoInteraction/";
     
 public:
 // enum C++
@@ -51,27 +51,9 @@ public:
     void setInteractionFolderPath(std::string interactionFolderPath);
     void setProductsID(std::vector<std::vector<int>> productsID);
     void setInactiveChannel(std::string interactionChannel);
+    
 };
 
-/**
-class NeutrinoAntineutrinoChannels : public Channels {
-public:
-    std::string interactionFolderPath;
-    std::vector<std::string> interactions;
-    std::vector<std::vector<int>> productsID;
-    std::vector<bool> activeAll;
-
-    NeutrinoAntineutrinoChannels();
-};
-
-NeutrinoAntineutrinoChannels::NeutrinoAntineutrinoChannels()
-    : Channels(interactions, productsID, activeAll, interactionFolderPath) {
-    interactionFolderPath = "/Applications/CRPropa/NuGammaInteraction/CRPropa3-data/data/NeutrinoInteractions/NeutrinoAntineutrinoInteraction/";
-    interactions = readInteractionChannels(interactionFolderPath);
-    productsID = readProductsID(interactionFolderPath);
-    activeAll = std::vector<bool>(interactions.size(), true);
-}
- */
 } // end namespace nupropa
 
 #endif // CHANNELS_H

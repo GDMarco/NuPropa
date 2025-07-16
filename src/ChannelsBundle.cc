@@ -10,11 +10,13 @@
 #include <stdexcept>
 #include <filesystem>
 
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+
 namespace nupropa {
 
 using namespace crpropa;
-
-ChannelsBundle::ChannelsBundle() {};
 
 ChannelsBundle::ChannelsBundle(ref_ptr<Channels> channels, std::string fname) {
     
@@ -23,311 +25,254 @@ ChannelsBundle::ChannelsBundle(ref_ptr<Channels> channels, std::string fname) {
     std::vector<std::string> interactionChannel = channels->getInteractionChannels();
     std::vector<bool> activeChannels = channels->getActiveChannels();
     
-    std::unordered_map<int, std::string> interactionDictionary;
-    int iChannels = 0;
+    std::unordered_map<int, std::pair<std::string, std::string >> ratesDict;
+    int index = 0;
+    
+    std::vector<std::string> masses = {"m1", "m2", "m3"};
+    std::vector<double> redshifts = {0, 2, 5, 8, 11, 15, 20, 25, 30, 40, 50};
     
     for (int i = 0; i <= interactionChannel.size(); ++i) {
+        
         if (!activeChannels[i]) {
+            
             continue;
+            
         } else {
-            std::string filename = path + interactionChannel[i] + "/rate_" + fname + ".txt";
-            std::ifstream infile(filename.c_str());
             
-            if (!infile.good())
-                throw std::runtime_error("Could not open rate file: " + filename);
+            for (const auto& a : masses) {
+                for (const auto& z : redshifts) {
+                    
+                    std::string pathInt = path + interactionChannel[i];
+                    
+                    std::ostringstream out;
+                    out << std::fixed << std::setprecision(1) << z;
+                    std::string zDec = out.str();
+                    
+                    std::string filename = pathInt + "/rate_" + fname + "_" + a + "_z" + zDec + ".txt";
+                    loadRateFile(filename);
+                    
+                    std::string filenameCDF = pathInt + "/cdf_" + fname + "_" + a + "_z" + zDec + ".txt";
+                    loadCumulativeRateFile(filenameCDF);
+                    
+                    // this is the same for each alphaBeta actually, so a way to not be redundant?
+                    std::string filenameProdChan = pathInt + "/products_channelId.txt"; // 2 to 2 processes, so (1 row, 3 col)
+                    loadProductsChannelId(filenameProdChan);
+                    
+                    ratesDict[index] = {interactionChannel[i], fname + "_" + a + "_z" + zDec};
+                    index = index + 1;
             
-            std::vector<double> vecEnergy;
-            std::vector<double> vecRate;
-            
-            while (infile.good()) {
-                if (infile.peek() != '#') {
-                    double a, b;
-                    infile >> a >> b;
-                    if (infile) {
-                        vecEnergy.push_back(pow(10, a) * eV);
-                        vecRate.push_back(b / Mpc);
-                    }
                 }
-                infile.ignore(std::numeric_limits < std::streamsize > ::max(), '\n');
             }
-            infile.close();
-            
-            std::string filenameCDF = path + interactionChannel[i] + "/cdf_" + fname + ".txt";
-            
-            std::ifstream infileCDF(filenameCDF.c_str());
-            
-            if (!infileCDF.good())
-                throw std::runtime_error("Could not open CDF file: " + filenameCDF);
-            
-            std::vector<double> vecE;
-            std::vector<double> vecs;
-            std::vector<std::vector<double>> vecCDF;
-            
-            // skip header
-            while (infileCDF.peek() == '#')
-                infileCDF.ignore(std::numeric_limits < std::streamsize > ::max(), '\n');
-            
-            double c;
-            // read s values in first line
-            infileCDF >> c; // skip first value
-            while (infileCDF.good() and (infileCDF.peek() != '\n')) {
-                infileCDF >> c;
-                vecs.push_back(pow(10, c) * eV * eV);
-            }
-            
-            // read all following lines: E, cdf values
-            while (infileCDF.good()) {
-                infileCDF >> c;
-                if (!infileCDF)
-                    break;  // end of file
-                vecE.push_back(pow(10, c) * eV);
-                std::vector<double> cdf;
-                for (int i = 0; i < vecs.size(); i++) {
-                    infileCDF >> c;
-                    cdf.push_back(c / Mpc);
-                }
-                vecCDF.push_back(cdf);
-            }
-            infileCDF.close();
-            
-            this->tabEnergy.push_back(vecEnergy);
-            this->tabRate.push_back(vecRate);
-            
-            this->tabE.push_back(vecE);
-            this->tabs.push_back(vecs);
-            this->tabCDF.push_back(vecCDF);
-            
-            this->tabProductsID.push_back(products[i]); // see if it works, if not define it in advance
-            
-            interactionDictionary[iChannels] = interactionChannel[i];
-            
-            iChannels = iChannels + 1;
         }
-        this->interactionDictionary = interactionDictionary;
+        this->ratesDictionary = ratesDict;
     }
 }
 
-void ChannelsBundle::sortDictionaryIndexes(int indexErased) {
+
+void ChannelsBundle::loadRateFile(const std::string& filename) {
+
+    std::ifstream infile(filename.c_str());
     
-    std::unordered_map<int, std::string> tempDictionary;
+    if (!infile.good())
+        throw std::runtime_error("Could not open rate file: " + filename);
     
-    for (auto el = this->interactionDictionary.begin(); el != this->interactionDictionary.end(); ++el) {
-        
-        int currentIndex = el->first;
-        std::string currentInteraction = el->second;
-        
-        if (currentIndex == indexErased) {
-            continue;
-        } else if (el->first > indexErased) {
-            tempDictionary[currentIndex - 1] = currentInteraction;
-        } else {
-            tempDictionary[currentIndex] = currentInteraction;
+    std::vector<double> vecEnergy;
+    std::vector<double> vecRate;
+    
+    while (infile.good()) {
+        if (infile.peek() != '#') {
+            double a, b;
+            infile >> a >> b;
+            if (infile) {
+                vecEnergy.push_back(pow(10, a) * eV);
+                vecRate.push_back(b / Mpc);
+            }
         }
+        infile.ignore(std::numeric_limits < std::streamsize > ::max(), '\n');
     }
+    infile.close();
     
-    this->interactionDictionary = tempDictionary;
+    this->tabEnergy.push_back(vecEnergy);
+    this->tabRate.push_back(vecRate);
     
 }
 
-void ChannelsBundle::removeChannels(int ID, int IDBkg) {
+void ChannelsBundle::loadCumulativeRateFile(const std::string& filename) {
     
-    if (abs(ID) == abs(IDBkg)) { // case i = j
+    std::ifstream infile(filename.c_str());
+    
+    if (!infile.good())
+        throw std::runtime_error("Could not open CDF file: " + filename);
+    
+    std::vector<double> vecE;
+    std::vector<double> vecs;
+    std::vector<std::vector<double>> vecCDF;
+    
+    // skip header
+    while (infile.peek() == '#')
+        infile.ignore(std::numeric_limits < std::streamsize > ::max(), '\n');
+    
+    double c;
+    // read s values in first line
+    infile >> c; // skip first value
+    while (infile.good() and (infile.peek() != '\n')) {
+        infile >> c;
+        vecs.push_back(pow(10, c) * eV * eV);
+    }
+    
+    // read all following lines: E, cdf values
+    while (infile.good()) {
+        infile >> c;
+        if (!infile)
+            break;  // end of file
+        vecE.push_back(pow(10, c) * eV);
+        std::vector<double> cdf;
+        for (int i = 0; i < vecs.size(); i++) {
+            infile >> c;
+            cdf.push_back(c / Mpc);
+        }
+        vecCDF.push_back(cdf);
+    }
+    infile.close();
+    
+    this->tabE.push_back(vecE);
+    this->tabs.push_back(vecs);
+    this->tabCDF.push_back(vecCDF);
+    
+}
+
+void ChannelsBundle::loadProductsChannelId(const std::string& filename) {
+    
+    std::ifstream infile(filename.c_str());
+    
+    if (!infile.good())
+        throw std::runtime_error("Could not open rate file: " + filename);
+    
+    std::vector<int> Ids;
+    
+    while (infile.good()) {
+        if (infile.peek() != '#') {
+            double a, b, c;
+            infile >> a >> b >> c; // 2 to 2 process, only one row (to optimise)
+            if (infile) {
+                Ids = {a, b, c};
+            }
+        }
+        infile.ignore(std::numeric_limits < std::streamsize > ::max(), '\n');
+    }
+    infile.close();
+    
+    this->tabProdChanId.push_back(Ids);
+}
+
+std::vector<std::string> ChannelsBundle::getAlphasBetas(int ID, int IDbkg) {
+    
+    std::vector<std::string> alphasBetas;
+    
+    if (abs(ID) == abs(IDbkg)) {        // case alpha = beta
         
         std::string interacting = "NeutrinoAntineutrino";
         
-        for (const auto& el : this->interactionDictionary) {
-            std::string interactionChannel = el.second;
+        for (const auto& [key, val] : this->ratesDictionary) {
+            
+            // std::cout << "val.first: " << val.first << '\n';
+            std::string interactionChannel = val.first;
             
             if (interactionChannel.find(interacting) == 0) {
                 
-                int i = el.first;
+                // NeutrinoAntineutrinoElastic
+                std::string elastic = interacting + "Elastic";
+                if (interactionChannel == elastic)
+                    alphasBetas.push_back(elastic);
                 
                 if (abs(ID) == 12) {
-                    std::string leptonic1 = interacting + "Muon";
-                    std::string leptonic2 = interacting + "Tau";
-                    if (interactionChannel == leptonic1 || interactionChannel == leptonic2) {
-                        this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                        this->tabRate.erase(this->tabRate.begin() + i);
-                        this->tabE.erase(this->tabE.begin() + i);
-                        this->tabs.erase(this->tabs.begin() + i);
-                        this->tabCDF.erase(this->tabCDF.begin() + i);
-                        this->tabProductsID.erase(this->tabProductsID.begin() + i);
                     
-                        sortDictionaryIndexes(i);
-                    }
+                    std::string leptonic = interacting + "Electron";
+                    if (interactionChannel == leptonic)
+                        alphasBetas.push_back(leptonic);
                     
                 } else if (abs(ID) == 14) {
-                    std::string leptonic1 = interacting + "Electron";
-                    std::string leptonic2 = interacting + "Tau";
-                    if (interactionChannel == leptonic1 || interactionChannel == leptonic2) {
-                        this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                        this->tabRate.erase(this->tabRate.begin() + i);
-                        this->tabE.erase(this->tabE.begin() + i);
-                        this->tabs.erase(this->tabs.begin() + i);
-                        this->tabCDF.erase(this->tabCDF.begin() + i);
-                        this->tabProductsID.erase(this->tabProductsID.begin() + i);
-                        
-                        sortDictionaryIndexes(i);
-                    }
-                } else {
-                    std::string leptonic1 = interacting + "Muon";
-                    std::string leptonic2 = interacting + "Electron";
-                    if (interactionChannel == leptonic1 || interactionChannel == leptonic2) {
-                        this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                        this->tabRate.erase(this->tabRate.begin() + i);
-                        this->tabE.erase(this->tabE.begin() + i);
-                        this->tabs.erase(this->tabs.begin() + i);
-                        this->tabCDF.erase(this->tabCDF.begin() + i);
-                        this->tabProductsID.erase(this->tabProductsID.begin() + i);
-                        
-                        sortDictionaryIndexes(i);
-                    }
-                }
-            } else {
-                
-                std::string elastic = "NeutrinoiAntineutrinojElastic";
-                
-                if (interactionChannel == elastic) { // here I should add the channel corresponding to Eq. 2.2, valid also for i = j, not only for i != j. Ask Rhorry if correct in this way!
                     
-                    continue;
+                    std::string leptonic = interacting + "Muon";
+                    if (interactionChannel == leptonic)
+                        alphasBetas.push_back(leptonic);
                     
                 } else {
                     
-                    int i = el.first;
+                    std::string leptonic = interacting + "Tauon";
+                    if (interactionChannel == leptonic)
+                        alphasBetas.push_back(leptonic);
                     
-                    this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                    this->tabRate.erase(this->tabRate.begin() + i);
-                    this->tabE.erase(this->tabE.begin() + i);
-                    this->tabs.erase(this->tabs.begin() + i);
-                    this->tabCDF.erase(this->tabCDF.begin() + i);
-                    this->tabProductsID.erase(this->tabProductsID.begin() + i);
+                } else {
                     
-                    sortDictionaryIndexes(i);
+                    alphasBetas.push_back(interactionChannel); // all the other resonances in nu_alpha + nux_alpha
+                    
                 }
             }
         }
-   
-    } else { // for i != j
         
+    } else {    // for alpha != beta
+            
         std::string interacting = "NeutrinoiAntineutrinoj";
-    
-        for (const auto& el : this->interactionDictionary) {
-            std::string interactionChannel = el.second;
+            
+        for (const auto& [key, val] : ratesDictionary) {
+                
+            // std::cout << "val.first: " << val.first << '\n';
+            std::string interactionChannel = val.first;
             
             if (interactionChannel.find(interacting) == 0) {
                 
-                int i = el.first;
+                // NeutrinoiAntineutrinojElastic
+                std::string elastic = interacting + "Elastic";
+                if (interactionChannel == elastic)
+                    alphasBetas.push_back(elastic);
                 
-                if (abs(ID) == 12 && abs(IDBkg) == 14) {
-                    std::string leptonic1 = interacting + "MuonAntielectron";
-                    std::string leptonic2 = interacting + "TauAntielectron";
+                if ((ID == 12 && IDbkg == -14) || (ID == -14 && IDbkg == 12)) {
+                        
+                    std::string leptonic = interacting + "ElectronAntimuon";
+                        
+                    if (interactionChannel == leptonic)
+                        alphasBetas.push_back(leptonic);
+            
+                        
+                } else if ((ID == 12 && IDbkg == -16) || (ID == -16 && IDbkg == 12)) {
+                        
                     std::string leptonic3 = interacting + "ElectronAntitau";
-                    std::string leptonic4 = interacting + "MuonAntitau";
-                    std::string leptonic5 = interacting + "TauAntimuon";
-                    if (interactionChannel == leptonic1 || interactionChannel == leptonic2 || interactionChannel == leptonic3 || interactionChannel == leptonic4 || interactionChannel == leptonic5) {
-                        this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                        this->tabRate.erase(this->tabRate.begin() + i);
-                        this->tabE.erase(this->tabE.begin() + i);
-                        this->tabs.erase(this->tabs.begin() + i);
-                        this->tabCDF.erase(this->tabCDF.begin() + i);
-                        this->tabProductsID.erase(this->tabProductsID.begin() + i);
                         
-                        sortDictionaryIndexes(i);
-                    }
-                } else if (abs(ID) == 12 && abs(IDBkg) == 16) {
-                    std::string leptonic1 = interacting + "MuonAntielectron";
-                    std::string leptonic2 = interacting + "TauAntielectron";
-                    std::string leptonic3 = interacting + "ElectronAntimuon";
-                    std::string leptonic4 = interacting + "MuonAntitau";
-                    std::string leptonic5 = interacting + "TauAntimuon";
-                    if (interactionChannel == leptonic1 || interactionChannel == leptonic2 || interactionChannel == leptonic3 || interactionChannel == leptonic4 || interactionChannel == leptonic5) {
-                        this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                        this->tabRate.erase(this->tabRate.begin() + i);
-                        this->tabE.erase(this->tabE.begin() + i);
-                        this->tabs.erase(this->tabs.begin() + i);
-                        this->tabCDF.erase(this->tabCDF.begin() + i);
-                        this->tabProductsID.erase(this->tabProductsID.begin() + i);
+                    if (interactionChannel == leptonic)
+                        alphasBetas.push_back(leptonic);
                         
-                        sortDictionaryIndexes(i);
-                    }
-                } else if (abs(ID) == 14 && abs(IDBkg) == 12) {
-                    std::string leptonic1 = interacting + "ElectronAntimuon";
-                    std::string leptonic2 = interacting + "TauAntielectron";
-                    std::string leptonic3 = interacting + "ElectronAntimuon";
-                    std::string leptonic4 = interacting + "MuonAntitau";
-                    std::string leptonic5 = interacting + "TauAntimuon";
-                    if (interactionChannel == leptonic1 || interactionChannel == leptonic2 || interactionChannel == leptonic3 || interactionChannel == leptonic4 || interactionChannel == leptonic5) {
-                        this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                        this->tabRate.erase(this->tabRate.begin() + i);
-                        this->tabE.erase(this->tabE.begin() + i);
-                        this->tabs.erase(this->tabs.begin() + i);
-                        this->tabCDF.erase(this->tabCDF.begin() + i);
-                        this->tabProductsID.erase(this->tabProductsID.begin() + i);
+                } else if ((ID == -12 && IDbkg == 14) || (ID == 14 && IDbkg == -12)) {
                         
-                        sortDictionaryIndexes(i);
-                    }
-                } else if (abs(ID) == 14 && abs(IDBkg) == 16) {
-                    std::string leptonic1 = interacting + "ElectronAntimuon";
-                    std::string leptonic2 = interacting + "TauAntielectron";
-                    std::string leptonic3 = interacting + "ElectronAntimuon";
-                    std::string leptonic4 = interacting + "MuonAntielectron";
-                    std::string leptonic5 = interacting + "TauAntimuon";
-                    if (interactionChannel == leptonic1 || interactionChannel == leptonic2 || interactionChannel == leptonic3 || interactionChannel == leptonic4 || interactionChannel == leptonic5) {
-                        this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                        this->tabRate.erase(this->tabRate.begin() + i);
-                        this->tabE.erase(this->tabE.begin() + i);
-                        this->tabs.erase(this->tabs.begin() + i);
-                        this->tabCDF.erase(this->tabCDF.begin() + i);
-                        this->tabProductsID.erase(this->tabProductsID.begin() + i);
+                    std::string leptonic = interacting + "MuonAntielectron";
                         
-                        sortDictionaryIndexes(i);
-                    }
-                } else if (abs(ID) == 16 && abs(IDBkg) == 12) {
-                    std::string leptonic1 = interacting + "ElectronAntimuon";
-                    std::string leptonic2 = interacting + "MuonAntitau";
-                    std::string leptonic3 = interacting + "ElectronAntimuon";
-                    std::string leptonic4 = interacting + "MuonAntielectron";
-                    std::string leptonic5 = interacting + "TauAntimuon";
-                    if (interactionChannel == leptonic1 || interactionChannel == leptonic2 || interactionChannel == leptonic3 || interactionChannel == leptonic4 || interactionChannel == leptonic5) {
-                        this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                        this->tabRate.erase(this->tabRate.begin() + i);
-                        this->tabE.erase(this->tabE.begin() + i);
-                        this->tabs.erase(this->tabs.begin() + i);
-                        this->tabCDF.erase(this->tabCDF.begin() + i);
-                        this->tabProductsID.erase(this->tabProductsID.begin() + i);
+                    if (interactionChannel == leptonic)
+                        alphasBetas.push_back(leptonic);
+                    
+                } else if ((ID == 14 && IDbkg == -16) || (ID == -16 && IDbkg == 14)) {
                         
-                        sortDictionaryIndexes(i);
-                    }
+                    std::string leptonic = interacting + "MuonAntitau";
+                        
+                    if (interactionChannel == leptonic)
+                        alphasBetas.push_back(leptonic);
+                        
+                } else if ((ID == 16 && IDbkg == -12) || (ID == -12 && IDbkg == 16)) {
+                        
+                    std::string leptonic = interacting + "TauAntielectron";
+                        
+                    if (interactionChannel == leptonic)
+                        alphasBetas.push_back(leptonic);
+                        
+                } else if ((ID == 16 && IDbkg == -14) || (ID == -14 && IDbkg == 16)) {
+                        
+                    std::string leptonic = interacting + "TauAntimuon";
+                        
+                    if (interactionChannel == leptonic)
+                        alphasBetas.push_back(leptonic);
+                    
                 } else {
-                    // abs(ID) == 16 && abs(IDBkg) == 14
-                    std::string leptonic1 = interacting + "ElectronAntimuon";
-                    std::string leptonic2 = interacting + "TauAntielectron";
-                    std::string leptonic3 = interacting + "ElectronAntimuon";
-                    std::string leptonic4 = interacting + "MuonAntielectron";
-                    std::string leptonic5 = interacting + "MuonAntitau";
-                    if (interactionChannel == leptonic1 || interactionChannel == leptonic2 || interactionChannel == leptonic3 || interactionChannel == leptonic4 || interactionChannel == leptonic5) {
-                        this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                        this->tabRate.erase(this->tabRate.begin() + i);
-                        this->tabE.erase(this->tabE.begin() + i);
-                        this->tabs.erase(this->tabs.begin() + i);
-                        this->tabCDF.erase(this->tabCDF.begin() + i);
-                        this->tabProductsID.erase(this->tabProductsID.begin() + i);
-                        
-                        sortDictionaryIndexes(i);
-                    }
+                    continue;
                 }
-            } else {
-                
-                int i = el.first;
-                
-                this->tabEnergy.erase(this->tabEnergy.begin() + i);
-                this->tabRate.erase(this->tabRate.begin() + i);
-                this->tabE.erase(this->tabE.begin() + i);
-                this->tabs.erase(this->tabs.begin() + i);
-                this->tabCDF.erase(this->tabCDF.begin() + i);
-                this->tabProductsID.erase(this->tabProductsID.begin() + i);
-                
-                sortDictionaryIndexes(i);
             }
         }
     }
@@ -346,6 +291,9 @@ std::vector<double> ChannelsBundle::fillTableZeros(std::vector<double> table, si
 }
 
 void ChannelsBundle::computeInteractionProbabilities(std::vector<std::vector<double>> rates) {
+    
+    this->channelProbability.clear();
+    
     size_t cols = rates[0].size();
     size_t rows = rates.size();
     
@@ -372,9 +320,12 @@ void ChannelsBundle::computeInteractionProbabilities(std::vector<std::vector<dou
                         // 3                    0.1
 }
 
-void ChannelsBundle::getProductsID(std::vector<double> tabEnergy, double E) {
-    // take the index i of the closest tabEnergy[i] to E
+void ChannelsBundle::selectIndex(std::vector<double> tabEnergy, double E) {
     
+    // at each step needs to be randomly picked
+    this->selectedIndex.clear();
+    
+    // take the index i of the closest tabEnergy[i] to E
     double distEnergy = 1e6; // to minimize this value
     int iEnergy = -1;
     for (int i; i <= tabEnergy.size(); ++i) {
@@ -405,45 +356,166 @@ void ChannelsBundle::getProductsID(std::vector<double> tabEnergy, double E) {
             break;
         }
     }
-    
-    std::vector<int> IDs = this->tabProductsID[selChannel];
-    this->selectedProductsID = IDs;
-    this->selectedChannelIndex = selChannel;
-    // see the correspondence between the id and the selected channel -> assign the products IDs
+
+    this->selectedIndex = selChannel;
     // to take into account parity invariance of the processes... !
     // for the elastic scatterings there are initialising values!
     
-    // end of the function to get the IDs!
 }
 
-double ChannelsBundle::getRate(int ID, int IDBkg, double E) {
+double ChannelsBundle::findClosestRedshift(double z, const std::vector<double> &redshifts) const {
     
-    removeChannels(ID, IDBkg);
+    auto it = std::lower_bound(redshifts.begin(), redshifts.end(), z);
+
+    if (it == redshifts.begin()) return *it;
+    if (it == redshifts.end()) return redshifts.back();
+
+    double upper = *it;
+    double lower = *(it - 1);
+
+    return (std::abs(upper - z) < std::abs(lower - z)) ? upper : lower;
     
-    if (this->tabEnergy.size() == 0) {
+}
+
+void ChannelsBundle::selectIndexes(std::string massCombRedshift, int ID, intID bkg) {
+    
+    // at each step should be updated
+    this->selectedIndexes.clear();
+    
+    std::vector<std::string> alphasBetas = getAlphasBetas(ID, IDbkg);
+    std::vector<int> indexes;
+
+    for (const auto& [key, val] : ratesDictionary) {
+        if (std::find(alphasBetas.begin(), alphasBetas.end(), val.first) != alphasBetas.end() && val.second == massCombRedshift) {
+            indexes.push_back(key);
+        }
+    }
+    
+    this->selectedIndexes = indexes;
+}
+
+std::vector<std::vector<double>> ChannelsBundle::selectedRates(std::vector<int> indexes) {
+    
+    std::vector<std::vector<double>> rates;
+
+    for (int idx : indexes) {
+        if (idx >= 0 && idx < this->tabRate.size()) {
+            rates.push_back(this->tabRate[idx]);
+        }
+    }
+    
+    return rates;
+}
+
+std::vector<std::vector<double>> ChannelsBundle::selectedEnergies(std::vector<int> indexes) {
+    
+    std::vector<std::vector<double>> energies;
+
+    for (int idx : energies) {
+        if (idx >= 0 && idx < this->tabEnergy.size()) {
+            energies.push_back(this->tabEnergy[idx]);
+        }
+    }
+    
+    return energies;
+}
+
+std::vector<std::vector<double>> ChannelsBundle::selectCDF() {
+    
+    std::vector<std::vector<std::vector<double>>> cdfs;
+
+    for (int idx : this->selectedIndexes) {
+        if (idx >= 0 && idx < this->tabCDF.size()) {
+            cdfs.push_back(this->tabCDF[idx]);
+        }
+    }
+    
+    std::vector<std::vector<double>> cdf = cdfs[this->selectedIndex];
+    return cdf;
+}
+
+std::vector<double> ChannelsBundle::selects(std::vector<int> indexes, int selectedIndex) {
+    
+    std::vector<std::vector<double>> ss;
+
+    for (int idx : this->selectedIndexes) {
+        if (idx >= 0 && idx < this->tabs.size()) {
+            ss.push_back(this->tabs[idx]);
+        }
+    }
+    
+    std::vector<std::vector<double>> s = ss[this->selectedIndex];
+    return s;
+}
+
+std::vector<double> ChannelsBundle::selectE() {
+    
+    std::vector<std::vector<double>> Es;
+
+    for (int idx : this->selectedIndexes) {
+        if (idx >= 0 && idx < this->tabE.size()) {
+            Es.push_back(this->tabE[idx]);
+        }
+    }
+    
+    std::vector<std::vector<double>> E = E[this->selectedIndex];
+    return E;
+}
+
+std::vector<int> ChannelsBundle::selectProdChanId() {
+    
+    std::vector<std::vector<int>> prodChanId;
+
+    for (int idx : this->selectedIndexes) {
+        if (idx >= 0 && idx < this->tabProdChanId.size()) {
+            prodChanId.push_back(this->abProdChanId[idx]);
+        }
+    }
+    
+    std::vector<std::vector<double>> IDs = prodChanId[this->selectedIndex];
+    return IDs;
+    
+}
+
+double ChannelsBundle::getRate(int ID, int IDbkg, std::string massComb, double z, double E) {
+    
+    std::vector<double> redshifts = {0, 2, 5, 8, 11, 15, 20, 25, 30, 40, 50}; // same as computed in NuPropa-data
+    double zClosest = findClosestRedshift(z, redshifts);
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(1) << zClosest;
+    std::string zDec = out.str();
+    
+    std::string redshift = "_z" + zDec;
+    
+    // look for the indexes compatible with massComb + redshift & alphaBeta
+    setSelectedIndexes(massComb + redshift, ID, IDbkg);
+    
+    std::vector<std::vector<double>> rates = selectedRates(this->selectedIndexes);
+    std::vector<std::vector<double>> energies = selectedEnergies(this->selectedIndexes);
+
+    this->channelProbability.clear();
+    
+    if (energies.size() == 0) {
+    
         throw std::runtime_error("No active channels for Neutrino-Antineutrino interaction!");
+    
+    } else if (energies.size() == 1) { // i.e. indexes has only one element
+        std::vector<double> ones(energies.size(), 1);
+        this->channelProbability.push_back(ones);
         
-    } else if (this->tabEnergy.size() == 1) {
-        std::vector<double> ones(this->tabEnergy[0].size(), 1);
-        this->channelProbability.push_back(ones); // maybe not needed! Or I need to initialise it in .h
-        
-        // check if in tabulated energy range
-        if (E < this->tabEnergy[0].front() or (E > this->tabEnergy[0].back()))
-            throw std::runtime_error("Energy out of range!"); // it is a problem for the simulation! I can put a naive value
-        
-        getProductsID(this->tabEnergy[0], E);
+        if (E < energies.front() or (E > energies.back()))
+            return;
         
         // interaction rate
-        double rate = interpolate(E, this->tabEnergy[0], this->tabRate[0]);
-    
+        double rate = interpolate(E, energies, rates);
         return rate;
         
     } else {
         
         size_t maximumTableSize = -1;
         int maximumIndex = -1;
-        for (size_t j = 0; j < this->tabEnergy.size(); j++) {
-            size_t tableSize = this->tabRate[j].size();
+        for (size_t j = 0; j < energies.size(); ++j) {
+            size_t tableSize = rates[j].size();
             if (tableSize > maximumTableSize) {
                 maximumTableSize = tableSize;
                 maximumIndex = j;
@@ -451,37 +523,36 @@ double ChannelsBundle::getRate(int ID, int IDBkg, double E) {
         }
         
         std::vector<double> totalRate(maximumTableSize, 0);
-        std::vector<std::vector<double>> resizedVectors;
+        std::vector<std::vector<double>> resizedRates;
         
-        for (size_t j; j < this->tabRate.size(); ++j) {
-            std::vector<double> resizedRate = fillTableZeros(this->tabRate[j], maximumTableSize);
-            resizedVectors.push_back(resizedRate);
+        for (size_t j; j < rates.size(); ++j) {
+            std::vector<double> resizedRate = fillTableZeros(rates[j], maximumTableSize);
+            resizedRates.push_back(resizedRate);
             
             for (int k = 0; k < maximumTableSize; ++k) {
                 totalRate[k] = totalRate[k] + resizedRate[k];
             }
         }
-        computeInteractionProbabilities(resizedVectors); // make sure it is sync with the interactionDictionary
         
-        // check if in tabulated energy range
-        if (E < this->tabEnergy[maximumIndex].front() or (E > this->tabEnergy[maximumIndex].back()))
-            throw std::runtime_error("Energy out of range!"); // it is a problem for the simulation! I can put a naive value
+        computeInteractionProbabilities(resizedRates);
         
-        getProductsID(this->tabEnergy[maximumIndex], E);
+        if (E < energies[maximumIndex].front() or (E > energies[maximumIndex].back()))
+            return;
+        
+        getProdChanId(energies[maximumIndex], E);
         
         // interaction rate
         double rate = interpolate(E, this->tabEnergy[maximumIndex], totalRate);
-
         return rate;
     }
 }
 
-int ChannelsBundle::getSelectedChannelIndex() {
-    return this->selectedChannelIndex;
+std::vector<int> ChannelsBundle::getSelectedIndexes() {
+    return this->selectedIndexes;
 }
 
-std::vector<int> ChannelsBundle::getSelectedProductsID() {
-    return this->selectedProductsID;
+int ChannelsBundle::getSelectedIndex() {
+    return this->selectedIndex;
 }
 
 } // end namespace nupropa

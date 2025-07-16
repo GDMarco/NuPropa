@@ -13,7 +13,7 @@
 namespace nupropa {
 
 using namespace crpropa;
-/// A custom C++ class for interaction channels
+
 class ChannelsBundle : public Referenced
 {
 private:
@@ -24,25 +24,41 @@ private:
     std::vector<std::vector<double>> tabE;
     std::vector<std::vector<double>> tabs;
     std::vector<std::vector<std::vector<double>>> tabCDF;
+    std::vector<std::vector<int>> tabProdChanId;
     
-    std::vector<std::vector<int>> tabProductsID;
-    std::vector<int> selectedProductsID;
+    std::vector<int> selectedIndexes; // 1st step of selecting the rate
+    int selectedIndex; // 2nd step to take the channel for the perform interaction
     
-    std::unordered_map<int, std::string> interactionDictionary;
-    std::vector<std::vector<double>> channelProbability; // to be sync with interactionDictionary
+    std::unordered_map<int, std::pair<std::string, std::string>> ratesDictionary;
+    std::vector<std::vector<double>> channelProbability;
     
 public:
  
-    ChannelsBundle();
     ChannelsBundle(ref_ptr<Channels> channels, std::string fname);
     
-    double getRate(int ID, int IDBkg, double E);
-    void removeChannels(int ID, int IDBkg);
-    void sortDictionaryIndexes(int indexErased);
+    void loadRateFile(const std::string& filename);
+    void loadCumulativeRateFile(const std::string& filename);
+    void loadProductsChannelId(const std::string& filename);
+    
+    double findClosestRedshift(double z, const std::vector<double> &redshifts) const;
+    void selectIndexes(std::string massCombRedshift, int ID, int IDbkg);
+    std::vector<std::string> getAlphasBetas(int ID, int IDbkg) ;
+
+    std::vector<std::vector<double>> selectedRates(std::vector<int> indexes);
+    std::vector<std::vector<double>> selectedEnergies(std::vector<int> indexes);
+    
+    double getRate(int ID, int IDBkg, std::string massComb, double z, double E);
+    
     std::vector<double> fillTableZeros(std::vector<double> table, size_t size);
     void computeInteractionProbabilities(std::vector<std::vector<double>> rates);
-    void getProductsID(std::vector<double> tabEnergy, double E);
-    std::vector<int> getSelectedProductsID();
+    void selectIndex(std::vector<double> tabEnergy, double E);
+    
+    std::vector<std::vector<double>> selectCDF();
+    std::vector<double> selects();
+    std::vector<double> selectE();
+
+    std::vector<int> getSelectedIndexes();
+    int getSelectedIndex();
     
 };
 

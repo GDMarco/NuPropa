@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
-#include <cuba.h>
+//#include <cuba.h>
 #include <vector>
 #include "var.hh"
 

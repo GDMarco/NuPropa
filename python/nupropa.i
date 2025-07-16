@@ -24,7 +24,7 @@
 %ignore operator nupropa::NeutrinoField*;
 
 /*  define headers to include into the wrapper. These are the plugin headers
- *  and the CRPRopa headers.
+ *  and the CRPRopa headers. [ParticleData is not a referenced pointer, just a class, that is called!]
  */
 %{
 #include "CRPropa.h"
@@ -34,6 +34,8 @@
 #include "nupropa/Channels.h"
 #include "nupropa/ChannelsBundle.h"
 #include "nupropa/NeutrinoBackground.h"
+#include "nupropa/RelativisticInteraction.h"
+#include "nupropa/ParticleData.h" 
 
 using namespace nupropa;
 %}
@@ -54,6 +56,11 @@ using namespace nupropa;
 %template(NeutrinoFieldRefPtr) crpropa::ref_ptr<nupropa::NeutrinoField>;
 %feature("director") nupropa::NeutrinoField;
 
+%implicitconv crpropa::ref_ptr<nupropa::RelativisticInteraction>;
+%template(RelativisticInteractionRefPtr) crpropa::ref_ptr<nupropa::RelativisticInteraction>;
+%feature("director") nupropa::RelativisticInteraction;
+
+
 /* include plugin parts to generate wrappers for */
 %include "nupropa/NeutrinoNeutrinoInteraction.h"
 %include "nupropa/NeutrinoAntineutrinoInteraction.h"
@@ -61,6 +68,8 @@ using namespace nupropa;
 %include "nupropa/Channels.h"
 %include "nupropa/ChannelsBundle.h"
 %include "nupropa/NeutrinoBackground.h"
+%include "nupropa/RelativisticInteraction.h"
+%include "nupropa/ParticleData.h"
 
 
 

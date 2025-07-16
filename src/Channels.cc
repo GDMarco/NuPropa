@@ -43,7 +43,7 @@ void Channels::setInteractionChannels(std::vector<std::string> interactionChanne
     this->interactionChannels = interactionChannels;
 }
 
-void Channels::readInteractionChannels(std::string interactionFolderPath) {
+void Channels::loadInteractionChannels(std::string interactionFolderPath) {
     
     std::__fs::filesystem::path dir = interactionFolderPath;
     std::vector<std::string> interactionChannels;
@@ -55,7 +55,8 @@ void Channels::readInteractionChannels(std::string interactionFolderPath) {
     this->interactionChannels = interactionChannels;
 }
 
-void Channels::readProductsID(std::string interactionFolderPath) {
+void Channels::loadProductsID(std::string interactionFolderPath) {
+    
     std::__fs::filesystem::path dir = interactionFolderPath;
     std::vector<std::string> interactionChannels;
     std::vector<std::vector<int>> productsID;
@@ -73,7 +74,9 @@ void Channels::readProductsID(std::string interactionFolderPath) {
         std::vector<int> vecIDs;
         while (std::getline(infile, line)) {
             if ((line.size() > 0) & (line[0] != '#'))
-                vecIDs.push_back(std::stoi(line));
+                vecIDs.push_back(std::stoi(line)); // the first one should be the channel ID, the products ID!
+                    // to change in the products.txt file!
+            
         }
         infile.close();
         productsID.push_back(vecIDs);
