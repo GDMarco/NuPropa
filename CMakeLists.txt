@@ -60,6 +60,8 @@ add_library(${PLUGINNAME} MODULE
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoBackground.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/RelativisticInteraction.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ParticleData.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoOscillation.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoMixing.cc
 )
 
 # /Applications/CRPropa/NuNuInteractionv1/CRPropa3/libs/kiss
