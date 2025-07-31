@@ -60,6 +60,11 @@ double dsigma_channels( KinematicData &Kin, int channel_id ){
         if( channel_id == 27 ) ME2 = ME2_Analytic::nunux_ffx(1,2,3,4, Kin, 12, 15);
         // 28-33
         if( channel_id > 27 and channel_id < 34 ) ME2 = ME2_Analytic::nugumma_Wl(1,2,3,4, Kin);
+        // 34 - 36, nu nubar > W- W+
+        if( channel_id > 33 and channel_id < 37 ) ME2 = ME2_Analytic::nunubar_WW(1,2,3,4, Kin);
+        // 37 - 39, nu nubar > Z Z
+        if( channel_id > 36 and channel_id < 40 ) ME2 = ME2_Analytic::nunubar_ZZ(1,2,3,4, Kin);
+
 
         // testing channel, for charm production
         if( channel_id == 99 ) ME2 = ME2_Analytic::eeB0g0NCM(1,2,3,4, Kin, 11, 4);

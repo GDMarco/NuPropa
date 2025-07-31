@@ -281,6 +281,63 @@ double ME2_Analytic::nu1nu2bar_l1l2bar(int i1, int i2, int i3, int i4, Kinematic
 	return ME2.real();
 }
 
+
+double ME2_Analytic::nunubar_WW(int i1, int i2, int i3, int i4, KinematicData &Kin ){
+	if( i1 * i2 > 3 ){
+		cerr << "nunubar_WW: initial-state fermions required\n";
+		exit(0);
+	}
+		// Kinematics
+	double s12 = 2.0*Kin.pij(i1,i2);
+	double s13 = 2.0*Kin.pij(i1,i3);
+	// For on-shell gauge boson production, the limit gamma_v -> 0 is taken.
+	// MW2, MZ2 are real valuted parameters.
+	double MW2 = MW2C.real();
+	double MZ2 = MZ2C.real();
+	double sw2 = SW2.real();
+	// Propagator without width effect ( s12  >= 2 MW2 > MZ2 )
+   complex<double> chiz = 1. / ( s12 - MZ2 );
+   complex<double> prefactor = 4. * pow(ALPHA,2) * pow(pi,2) * chiz * conj(chiz);	
+
+	complex<double> ME2 = pow(MW2,-2)*(12*(MZ2*s12 - s13*(s12 + s13))*pow(MW2,4) - 12*s12*pow(MW2,5) + 
+     MW2*MZ2*(MZ2*(3*s12 - 2*s13) + 4*s13*(-s12 + s13))*pow(s12 - s13,2) + 
+     s13*pow(MZ2,2)*pow(s12 - s13,3) + 
+     (s12 - s13)*pow(MW2,2)*((-6*s12 + 5*s13)*pow(MZ2,2) + 
+        4*s13*(-4*s12*s13 + 2*pow(s12,2) + 3*pow(s13,2)) - 
+        4*MZ2*(-5*s12*s13 + 3*pow(s12,2) + 4*pow(s13,2))) + 
+     pow(MW2,3)*(-(s12*pow(MZ2,2)) + 4*MZ2*(-3*s12*s13 + 2*pow(s12,2) + 3*pow(s13,2)) + 
+        4*(-4*s13*pow(s12,2) + 2*pow(s12,3) + 7*s12*pow(s13,2) - 6*pow(s13,3))))*
+   pow(MW2 - s12 + s13,-2)*pow(sw2,-2);
+
+   // No spin or colour averaging for the neutrinos required
+   return ME2.real() * prefactor.real();
+}
+
+
+double ME2_Analytic::nunubar_ZZ(int i1, int i2, int i3, int i4, KinematicData &Kin ){
+	if( i1 * i2 > 3 ){
+		cerr << "nunubar_ZZ: initial-state fermions required\n";
+		exit(0);
+	}	
+	// Kinematics
+	double s12 = 2.0*Kin.pij(i1,i2);
+	double s13 = 2.0*Kin.pij(i1,i3);
+	// For on-shell gauge boson production, the limit gamma_v -> 0 is taken.
+	// MW2, MZ2 are real valuted parameters.
+	double MZ2 = MZ2C.real();
+	// Propagator without width effect ( s12  >= 2 MW2 > MZ2 )
+   complex<double> prefactor = 4. * pow(ALPHA,2) * pow(pi,2);
+   // gLnu in principle contains complex parts, can either keep them or throw them away to this order in alpha
+
+	complex<double> ME2 = 64.*pow(gLnu,2)*pow(MZ2 - s13,-2)*(2*s12*pow(MZ2,3) - MZ2*s12*pow(s12 - 2*s13,2) - 
+     2*pow(MZ2,2)*(-(s12*s13) + pow(s12,2) + pow(s13,2)) + 
+     s13*(-3*s13*pow(s12,2) + pow(s12,3) + 4*s12*pow(s13,2) - 2*pow(s13,3)))*pow(MZ2 - s12 + s13,-2)*
+   pow(conj(gLnu),2);
+
+   return prefactor.real() * ME2.real();
+}
+
+
 // nu1 + gamma > W+ + l1
 double ME2_Analytic::nugumma_Wl(int i1, int i2, int i3, int i4, KinematicData &Kin){
 

@@ -175,6 +175,18 @@ void Variables::init_channels(){
 	process_map.emplace( 32, "nu_m~ A -> W- m+");
 	process_map.emplace( 33, "nu_t~ A -> W- t+");
 
+	// Add diboson processes
+	// nu nubar > W- W+
+	process_map.emplace( 34, "nu_e nu_e~ -> W- W+");
+	process_map.emplace( 35, "nu_m nu_m~ -> W- W+");
+	process_map.emplace( 36, "nu_t nu_t~ -> W- W+");
+	// nu nubar > Z Z
+	process_map.emplace( 37, "nu_e nu_e~ -> Z Z");
+	process_map.emplace( 38, "nu_m nu_m~ -> Z Z");
+	process_map.emplace( 39, "nu_t nu_t~ -> Z Z");
+
+
+
 	// 99) e- e+ > Q Qbar [testing channel]
 	process_map.emplace( 99, "e- e+ -> c c~");	
 
@@ -215,8 +227,6 @@ void Variables::init_channels(){
 	process_map.emplace( 119, "nu_e A -> e- u d~");
 	process_map.emplace( 120, "nu_mu A -> mu- u d~");
 	process_map.emplace( 121, "nu_tau A -> tau- u d~");
-
-
 
 }
 
@@ -303,34 +313,59 @@ void Variables::init_channel_information(int channel, int *pdgs, double *masses)
 	// process_map.emplace( 27, "nu_1 nu_1~ -> tau- tau+");
 	if( channel == 27 ){
 		masses[0] = mtau; masses[1] = mtau;
-	}
+	}	
 	// // Onshell W processes
-	// // 25-27) nu1 + gamma > W+ l-
-	// process_map.emplace( 25, "nu_e gamma -> W+ e-");
+	// process_map.emplace( 28, "nu_e gamma -> W+ e-");
 	if( channel == 28 ){
 		masses[0] = mw; masses[1] = me;
 	}	
-	// process_map.emplace( 26, "nu_m gamma -> W+ m-");
+	// process_map.emplace( 29, "nu_m gamma -> W+ m-");
 	if( channel == 29 ){
 		masses[0] = mw; masses[1] = mm;
 	}	
-	// process_map.emplace( 27, "nu_t gamma -> W+ t-");
+	// process_map.emplace( 30, "nu_t gamma -> W+ t-");
 	if( channel == 30 ){
 		masses[0] = mw; masses[1] = mtau;
 	}	
-	// // 28-30) nu1bar + gamma > W- l+
-	// process_map.emplace( 28, "nu_e~ gamma -> W- e+");
+	// // 31-32) nu1bar + gamma > W- l+
+	// process_map.emplace( 31, "nu_e~ gamma -> W- e+");
 	if( channel == 31 ){
 		masses[0] = mw; masses[1] = me;
 	}	
-	// process_map.emplace( 29, "nu_m~ gamma -> W- m+");
+	// process_map.emplace( 32, "nu_m~ gamma -> W- m+");
 	if( channel == 32 ){
 		masses[0] = mw; masses[1] = mm;
-	}	
-	// process_map.emplace( 30, "nu_t~ gamma -> W- t+");
+	}
+	// process_map.emplace( 33, "nu_t~ gamma -> W- t+");
 	if( channel == 33 ){
 		masses[0] = mw; masses[1] = mtau;
 	}
+	// 34-39 diboson processes
+	// process_map.emplace( 34, "nu_e nu_e~ -> W- W+");
+	if( channel == 34 ){
+		masses[0] = mw; masses[1] = mw;
+	}	
+	// process_map.emplace( 35, "nu_m nu_m~ -> W- W+");
+	if( channel == 35 ){
+		masses[0] = mw; masses[1] = mw;
+	}	
+	// process_map.emplace( 36, "nu_t nu_t~ -> W- W+");
+	if( channel == 36 ){
+		masses[0] = mw; masses[1] = mw;
+	}
+	// process_map.emplace( 37, "nu_e nu_e~ -> Z Z");
+	if( channel == 37 ){
+		masses[0] = mz; masses[1] = mz;
+	}	
+	// process_map.emplace( 38, "nu_m nu_m~ -> Z Z");
+	if( channel == 38 ){
+		masses[0] = mz; masses[1] = mz;
+	}	
+	// process_map.emplace( 39, "nu_t nu_t~ -> Z Z");
+	if( channel == 39 ){
+		masses[0] = mz; masses[1] = mz;
+	}	
+
 
 	// debugging channel
 	if( channel == 99 ){

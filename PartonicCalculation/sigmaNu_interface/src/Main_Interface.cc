@@ -135,6 +135,7 @@ double dsigma_Interface_2to2(double s12, std::string variable, double var_value,
 	double mfinal(0.);
 	for( int i(0); i < nfinal; i++)
 		mfinal += masses[i];
+
 	if( pow(mfinal,2) > s12 ){
 		return 0.;
 	}

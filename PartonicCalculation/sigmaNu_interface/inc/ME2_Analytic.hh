@@ -31,6 +31,17 @@ namespace ME2_Analytic {
     // nu1 + nu2bar > l1 + l2bar
     extern double nu1nu2bar_l1l2bar(int i1, int i2, int i3, int i4, KinematicData &Kin);
 
+    ///////////////////////////////////////
+    //// on-shell W W and Z Z production //
+    ///////////////////////////////////////
+
+    // nu nubar > W W
+    extern double nunubar_WW(int i1, int i2, int i3, int i4, KinematicData &Kin );
+
+    // nu nubar > Z Z
+    extern double nunubar_ZZ(int i1, int i2, int i3, int i4, KinematicData &Kin );
+
+
     ////////////////////////////////////////////////
     // (anti)neutrino + photon scattering results //
     ////////////////////////////////////////////////
