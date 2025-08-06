@@ -1,2 +1,0 @@
-# Hashes of file build rules.
-300cea7343273b6013eb6b48943bbe3c nupropa_wrap.cxx
