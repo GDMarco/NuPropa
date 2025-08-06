@@ -1,5 +1,5 @@
-#ifndef NUPROPA_NEUTRINOBACKGROUND_H
-#define NUPROPA_NEUTRINOBACKGROUND_H
+#ifndef NUPROPA_NEUTRINOFIELD_H
+#define NUPROPA_NEUTRINOFIELD_H
 
 #include <crpropa/Common.h>
 #include <crpropa/Referenced.h>
@@ -125,4 +125,4 @@ public:
 
 } // namespace nupropa
 
-#endif // NUPROPA_NEUTRINOBACKGROUND_H
+#endif // NUPROPA_NEUTRINOFIELD_H

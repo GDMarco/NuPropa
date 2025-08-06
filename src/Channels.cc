@@ -18,12 +18,13 @@ Channels::Channels(std::vector<std::string> interactionChannels, std::vector<std
     
     if (interactionChannels.size() != active.size())
         throw std::invalid_argument("Different number of channels and activations!");
-        // maybe a runtime_error, see documentation!
+    // maybe a runtime_error, see documentation!
     
     setInteractionChannels(interactionChannels);
     setProductsID(productsID);
     setChannelsActive(active);
     setInteractionFolderPath(interactionFolderPath);
+    
 };
 
 int Channels::getChannelIndex(std::string interactionChannel) const {

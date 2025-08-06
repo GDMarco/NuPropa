@@ -1,4 +1,4 @@
-#include "nupropa/NeutrinoBackground.h"
+#include "nupropa/NeutrinoField.h"
 #include <crpropa/Units.h>
 #include <crpropa/Random.h>
 

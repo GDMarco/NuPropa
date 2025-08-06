@@ -42,8 +42,8 @@ public:
     };
     int getChannelIndex(std::string interactioChannel) const;
     
-    void readInteractionChannels(std::string interactionFolder);
-    void readProductsID(std::string interactionFolder);
+    void loadInteractionChannels(std::string interactionFolder);
+    void loadProductsID(std::string interactionFolder);
     void activeAll();
     
     void setInteractionChannels(std::vector<std::string> interactionChannels);

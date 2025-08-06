@@ -24,47 +24,47 @@ RelativisticInteraction::RelativisticInteraction(double m1, double E, double s) 
     setGammaCom(E, s);
 };
 
-void setBetaCom(double E, double m1, double m2, double s) {
+void RelativisticInteraction::setBetaCom(double E, double m1, double m2, double s) {
     
     Random &random = Random::instance();
     double costh = random.randUniform(-1, 1); // generate a random number between [-1, 1]
         // it is problematic at the boundaries costh * costh == 1
+        // I should take it from the random generation in process!
+    
     double K = s - m1 * m1 * c_squared * c_squared - m2 * m2 * c_squared * c_squared;
     double Y = K * K / 4 + m2 * m2 * c_squared * c_squared * E * E * costh * costh;
     
-    double eps = K * E + sqrt(4 * E * E * (1 - costh * costh) * Y) / 4 / E / E / (1 - costh * costh);
+    double e = K * E + sqrt(4 * E * E * (1 - costh * costh) * Y) / 4 / E / E / (1 - costh * costh);
+    
+    double beta = (sqrt(E * E - m1 * m1 * c_squared * c_squared) + sqrt(e * e - m2 * m2 * c_squared * c_squared) * costh) / (E + e);
     
     // check eps >= m2 * c_squared
-    
-    this->eps = eps;
-    
-    double beta = (sqrt(E * E - m1 * m1 * c_squared * c_squared) + sqrt(this->eps * this->eps - m2 * m2 * c_squared * c_squared) * costh) / (E + this->eps);
-    
+    this->eps = e;
     this->beta_com = beta;
     
 }
 
-void setBetaPhotonCom(double E, double m1, double s) {
+void RelativisticInteraction::setBetaPhotonCom(double E, double m1, double s) {
     Random &random = Random::instance();
     double costh = random.randUniform(-1, 1); // generate a random number between [-1, 1]
+    // it should be taken from process!
     
-    double eps = (s - m1 * m1 * c_squared * c_squared) / 2 / E / (1 - costh);
+    double e = (s - m1 * m1 * c_squared * c_squared) / 2 / E / (1 - costh);
     
-    this->eps = eps;
+    double beta = (sqrt(E * E - m1 * m1 * c_squared * c_squared) + e * costh) / (E + e);
     
-    double beta = (sqrt(E * E - m1 * m1 * c_squared * c_squared) + this->eps * costh) / (E + this->eps);
-    
+    this->eps = e;
     this->beta_com = beta;
 }
 
-void setGammaCom(double E, double s) {
+void RelativisticInteraction::setGammaCom(double E, double s) {
     double gamma = (E + this->eps) / sqrt(s);
     this->gamma_com = gamma;
 }
 
 double RelativisticInteraction::computeProductsMomentumCom(double s, double m3, double m4) {
     
-    double p_com = sqrt(s / 4 - (m3 * m3 * c_squared * c_squared + m4 * m4 * c_squared * c_squared) * 0.5 + (m3 * m3 * c_squared * c_squared - m4 * m4 * c_squared * c_squared) ** 2 / 4 / s);
+    double p_com = sqrt(s / 4 - (m3 * m3 * c_squared * c_squared + m4 * m4 * c_squared * c_squared) * 0.5 + std::pow((m3 * m3 * c_squared * c_squared - m4 * m4 * c_squared * c_squared), 2) / 4 / s);
     
     return p_com;
 }

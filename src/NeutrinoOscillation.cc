@@ -18,12 +18,13 @@ namespace nupropa {
 
 using namespace crpropa;
 
-NeutrinoOscillation::NeutrinoOscillation();
+NeutrinoOscillation::NeutrinoOscillation() {};
+
 NeutrinoOscillation::NeutrinoOscillation(ref_ptr<NeutrinoMixing> neutrinoMixing) {
     setNeutrinoMixing(neutrinoMixing);
 }
 
-NeutrinoOscillation::setNeutrinoMixing(ref_ptr<NeutrinoMixing> neutrinoMixing) {
+void NeutrinoOscillation::setNeutrinoMixing(ref_ptr<NeutrinoMixing> neutrinoMixing) {
     this->neutrinoMixing = neutrinoMixing;
 }
 
@@ -36,7 +37,7 @@ void NeutrinoOscillation::process(crpropa::Candidate *candidate) const {
     
     // double z = candidate->getRedshift();
     double E = candidate->current.getEnergy();
-    double L = candidate->current.getTrajectoryLength();
+    double L = candidate->getTrajectoryLength();
     
     int IDosc = this->neutrinoMixing->oscillateFlavour(ID, E, L);
     

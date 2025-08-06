@@ -1,6 +1,8 @@
 #ifndef NUPROPA_PARTICLEDATA_H
 #define NUPROPA_PARTICLEDATA_H
 
+#include <crpropa/Module.h>
+
 #include <vector>
 #include <string>
 #include <fstream>

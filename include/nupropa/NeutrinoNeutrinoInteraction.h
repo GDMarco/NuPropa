@@ -2,7 +2,8 @@
 #define NUPROPA_NEUTRINONEUTRINOINTERACTION_H
 
 #include <crpropa/Module.h>
-#include "nupropa/NeutrinoBackground.h"
+#include "nupropa/NeutrinoField.h"
+#include "nupropa/NeutrinoMixing.h"
 #include "nupropa/RelativisticInteraction.h"
 
 #include <string>
@@ -28,6 +29,8 @@ private:
     std::unordered_map<std::string, int> ratesDictionary;
     
     double neutrinoFieldMass;
+    mutable int neutrinoFieldID;
+    
     std::vector<std::vector<double>> tabEnergy;
     std::vector<std::vector<double>> tabRate;
     
@@ -35,11 +38,11 @@ private:
     std::vector<std::vector<double>> tabs;
     std::vector<std::vector<std::vector<double>>> tabCDF;
 
-    ref_ptr<RelativisticInteraction> relInteraction;
+    mutable ref_ptr<RelativisticInteraction> relInteraction;
     
 public:
     
-    NeutrinoNeutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, bool haveSecondaries = false, double limit = 0.1, ref_ptr<NeutrinoMixing> neutrinoMixing);
+    NeutrinoNeutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries = false, double limit = 0.1);
     
     // set the target neutrino field
     void setNeutrinoField(ref_ptr<NeutrinoField> neutrinoField);
@@ -61,9 +64,7 @@ public:
     void setInteractionTag(std::string tag);
     std::string getInteractionTag() const;
     
-    void setRelativisticInteraction(double m1, double m2, double E, double s);
-    
-    double getDifferentialXS(double s, std::string variable, double variableValue, int idChannel, int seedDiffXS);
+    void setRelativisticInteraction(double m1, double m2, double E, double s) const;
     
     void loadRateFile(const std::string& fileName);
     void loadCumulativeRateFile(const std::string& fileName);

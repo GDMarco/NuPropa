@@ -1,7 +1,7 @@
 #include "nupropa/NeutrinoAntineutrinoInteraction.h"
 #include "nupropa/Channels.h"
 #include "nupropa/ChannelsBundle.h"
-#include "nupropa/NeutrinoBackground.h"
+#include "nupropa/NeutrinoField.h"
 #include "nupropa/RelativisticInteraction.h"
 #include "nupropa/ParticleData.h"
 #include "nupropa/NeutrinoMixing.h"
@@ -74,55 +74,11 @@ void NeutrinoAntineutrinoInteraction::setChannelsBundle(ref_ptr<Channels> channe
     this->channelsBundle = new ChannelsBundle(channels, fname);
 }
 
-void NeutrinoAntineutrinoInteraction::setRelativisticInteraction(double m1, double m2, double E, double s) {
-    this->relInteraction = new relInteraction(m1, m2, E, s);
+void NeutrinoAntineutrinoInteraction::setRelativisticInteraction(double m1, double m2, double E, double s) const {
+    this->relInteraction = new RelativisticInteraction(m1, m2, E, s);
 }
 
-double NeutrinoNeutrinoInteraction::getDifferentialXS(double s, std::string variable, double variableValue, int idChannel, int seedDiffXS) {
-    
-    std::string partonicPath = "/Applications/CRPropa/NuPropaLap/PartonicCalculation/sigmaNu_interface/"; // to change with NUPROPA path
-    std::string interfacePath = partonicPath + "bin/";
-
-    std::ostringstream cmd;
-    cmd << interfacePath << "Main_Interface.exe"
-        << " -c " << idChannel
-        << " -s " << seedDiffXS
-        << " -E " << std::sqrt(s / GeV / GeV); // Ecms has to be given in GeV
-    
-    int result = std::system(cmd.str().c_str());
-    if (result != 0) {
-        throw std::runtime_error("Error: Failed to run Main_Interface.exe, with exit code: " << result);
-    }
-
-    std::ostringstream ss;
-    ss << std::scientific << std::setprecision(5) << s / GeV / GeV;
-    std::string Ecms2 = ss.str();
-    
-    std::string filePath = partonicPath + "dataDifferentialXS/channel" + std::to_string(idChannel) + "/";
-    std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) + "_EcmsSq" + Ecms2 + "_s" + std::to_string(seedDiffXS) + ".txt";
-    
-    std::vector<double> variableScan;
-    std::vector<double> differentialXS;
-    
-    std::ifstream infile(filename);
-    
-    if(!infile) {
-        throw std::runtime_error( << "Error: could not open the diffentialXS file. The filename is: " << filename );
-    } else {
-        
-        double a, b;
-        while (infile >> a >> b) {
-            variableScan.push_back(a);
-            differentialXS.push_back(b);
-        }
-        infile.close();
-    }
-    
-    double diffXS = interpolate(variableValue, variableScan, differentialXS);
-    return diffXS;
-    
-}
-
+// the structure is inspired by EMInverseCompton class etc.
 class NeutrinoAntineutrinoSecondariesDistribution {
     private:
         std::vector< std::vector<double> > data;
@@ -134,6 +90,7 @@ class NeutrinoAntineutrinoSecondariesDistribution {
         double s_max;
         double costh_min;
         double costh_max;
+        double dcosth;
         double dls;
     
     public:
@@ -143,8 +100,8 @@ class NeutrinoAntineutrinoSecondariesDistribution {
         Ns = 1000;
         Nrer = 1000;
         
-        s_min = sThr;
-        s_max = 1e28 * eV * eV;
+        s_min = sThr; // yet in eV
+        s_max = 1e28 * eV * eV; // value from the computed tables
         dls = (log(s_max) - log(s_min)) / Ns;
         
         costh_min = -1;
@@ -159,7 +116,7 @@ class NeutrinoAntineutrinoSecondariesDistribution {
         for (size_t i = 0; i < Ns + 1; ++i)
             s_values[i] = s_min * exp(i * dls);
         
-        if (!variable == "costh13_com")
+        if (variable != "costh13_com")
             throw std::runtime_error("The only available variable to compute the differential cross section is costheta13_com!");
         
         // tabulating the costh13_com bin borders
@@ -170,8 +127,7 @@ class NeutrinoAntineutrinoSecondariesDistribution {
         // to generate randomly the seed to produce the differential cross section
         // Random &random = Random::instance();
         // int seedDiffXS = random.randInt();
-        // not affecting the result!
-        
+        // not affecting the results
         int seedDiffXS = 1;
         
         // for each s and costh13_com tabulate the cumulative differential cross section
@@ -179,24 +135,74 @@ class NeutrinoAntineutrinoSecondariesDistribution {
             double s = s_min * exp((i + 0.5) * dls);
             
             // cumulative midpoint integration
-            data_i[0] = getDifferentialXS(s, variable, costh_min, idChannel, seedDiffXS) * (dcosth[i] - 1);
+            data_i[0] = getDifferentialXS(s, variable, costh_min, idChannel, seedDiffXS) * dcosth * i;
             // to check * (dcosth[i] - 1)!!!
             
             for (size_t j = 1; j < Nrer; j++) {
                 double costh13_com = costh_min + (j + 0.5) * dcosth;
                 double dcosth13_com = (j + 1) * dcosth - j * dcosth; // since we are on a linear scale, dcosth13_com == dcosth
                 
-                data_i[j] = getDifferentialXS(s, variable, cost13_com, idChannel, seedDiffXS) * dcosth13_com;
+                data_i[j] = getDifferentialXS(s, variable, costh13_com, idChannel, seedDiffXS) * dcosth13_com;
                 data_i[j] += data_i[j - 1];
             }
             data[i] = data_i;
         }
+        
+    }
+    
+    double getDifferentialXS(double s, std::string variable, double variableValue, int idChannel, int seedDiffXS) {
+        
+        std::string partonicPath = "/Applications/CRPropa/NuPropaLap/PartonicCalculation/sigmaNu_interface/"; // to change with NUPROPA path
+        std::string interfacePath = partonicPath + "bin/";
+
+        std::ostringstream cmd;
+        cmd << interfacePath << "Main_Interface.exe"
+            << " -c " << idChannel
+            << " -s " << seedDiffXS
+            << " -E " << std::sqrt(s / GeV / GeV); // Ecms has to be given in GeV
+        
+        int result = std::system(cmd.str().c_str());
+        if (result != 0) {
+            std::ostringstream oss;
+            oss << "Error: Failed to run Main_Interface.exe, with exit code: " << result;
+            throw std::runtime_error(oss.str());
+        }
+
+        std::ostringstream ss;
+        ss << std::scientific << std::setprecision(5) << s / GeV / GeV;
+        std::string Ecms2 = ss.str();
+        
+        std::string filePath = partonicPath + "dataDifferentialXS/channel" + std::to_string(idChannel) + "/";
+        std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) + "_EcmsSq" + Ecms2 + "_s" + std::to_string(seedDiffXS) + ".txt";
+        
+        std::vector<double> variableScan;
+        std::vector<double> differentialXS;
+        
+        std::ifstream infile(filename);
+        
+        if(!infile) {
+            std::ostringstream oss;
+            oss << "Error: could not open the differentialXS file. The filename is: " << filename;
+            throw std::runtime_error(oss.str());
+        } else {
+            
+            double a, b;
+            while (infile >> a >> b) {
+                variableScan.push_back(a);
+                differentialXS.push_back(b);
+            }
+            infile.close();
+        }
+        
+        double diffXS = interpolate(variableValue, variableScan, differentialXS);
+        return diffXS;
+        
     }
     
     // draw random costh13_com from the differential cross section distribution
     double sample(double s) {
         size_t idx = std::lower_bound(s_values.begin(), s_values.end(), s) - s_values.begin();
-        std::vector<double> s0 data[idx];
+        std::vector<double> s0 = data[idx];
         
         Random &random = Random::instance();
         size_t j = random.randBin(s0); // draw random bin (lower bin boundary returned)
@@ -217,7 +223,7 @@ void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate, d
     if (not haveSecondaries)
         return;
     
-    int indexChannel = this->channelsBundle->getSelectedChannelIndex();
+    int indexChannel = this->channelsBundle->getSelectedIndex();
     
     std::vector<double> tabE = this->channelsBundle->selectE();
     std::vector<double> tabs = this->channelsBundle->selects();
@@ -247,8 +253,8 @@ void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate, d
     } else {
         
         ParticleData particle;
-        m3 = particle->getParticleMass(prodId1); // in kg
-        m4 = particle->getParticleMass(prodId2); // in kg
+        m3 = particle.getParticleMass(prodId1); // in kg
+        m4 = particle.getParticleMass(prodId2); // in kg
         
     }
     
@@ -299,9 +305,12 @@ void NeutrinoAntineutrinoInteraction::process(Candidate *candidate) const {
     
     double mass = this->neutrinoMixing->fromFlavourToMass(ID) * eV; // returned in eV from the function
     int indexMass = this->neutrinoMixing->massToIndexMass(mass / eV) + 1;
-    std::string massComb = this->neutrinoField->getFieldName + "_m" + std::to_string(indexMass);
+    std::string massComb = this->neutrinoField->getFieldName() + "_m" + std::to_string(indexMass);
     
     double rate = this->channelsBundle->getRate(ID, IDbkg, massComb, z, E);
+    
+    if (rate < 0)
+        return;
     
     // check for interaction
     Random &random = Random::instance();

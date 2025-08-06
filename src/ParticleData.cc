@@ -1,4 +1,4 @@
-#include "nupropa/ParticleID.h"
+#include "nupropa/ParticleData.h"
 #include <crpropa/Units.h>
 
 #include <vector>
@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <filesystem>
 #include <unordered_map>
+#include <sstream>
 
 namespace nupropa {
 
@@ -30,7 +31,7 @@ ParticleData::ParticleData() {
         {4, 1.24 * GeV / c_squared}, // Charm Quark
         {5, 4.18 * GeV / c_squared}, // Bottom Quark
         {6, 171 * GeV / c_squared} // Top Quark
-    }
+    };
     
     setParticleIDmass(IDmass);
     
@@ -40,28 +41,33 @@ ParticleData::ParticleData(std::unordered_map<int, double> IDmass) {
     setParticleIDmass(IDmass);
 }
 
-void setParticleIDmass(std::unordered_map<int, double> IDmass) {
+void ParticleData::setParticleIDmass(std::unordered_map<int, double> IDmass) {
     this->dictionaryIDmass = IDmass;
 }
 
-double getParticleMassFromID(int ID) {
-
+double ParticleData::getParticleMass(int ID) {
+    
     auto it = dictionaryIDmass.find(ID);
     if (it != dictionaryIDmass.end()) {
         return it->second;
     } else {
-        throw std::runtime_error("Error: Particle ID " << ID << " not found in the dictionary.\n");
+        std::ostringstream oss;
+        oss << "Error: Particle ID " << ID << " not found in the dictionary.\n";
+        throw std::runtime_error(oss.str());
         return -1;
     }
+    
 }
 
-void addNewParticle(int ID, double mass) {
+void ParticleData::addNewParticle(int ID, double mass) {
     if (dictionaryIDmass.find(ID) == dictionaryIDmass.end()) {
         dictionaryIDmass[ID] = mass;
     } else {
-        std::cerr << "Warning: Particle ID " << ID << " already exists.\n";
+        std::ostringstream oss;
+        oss << "Warning: Particle ID " << ID << " already exists.\n";
+        throw std::runtime_error(oss.str());
     }
-}
+};
 
 } // end namespace nupropa
 

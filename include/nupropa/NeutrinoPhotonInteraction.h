@@ -8,6 +8,7 @@
 #include <crpropa/Candidate.h>
 #include <crpropa/PhotonBackground.h>
 
+#include "nupropa/NeutrinoMixing.h"
 #include "nupropa/RelativisticInteraction.h"
 
 #include <fstream>
@@ -20,7 +21,10 @@ using namespace crpropa;
 
 class NeutrinoPhotonInteraction : public Module {
 private:
+    
     ref_ptr<PhotonField> photonField;
+    ref_ptr<NeutrinoMixing> neutrinoMixing;
+    
     bool haveSecondaries;
     double limit;
     // double thinning;
@@ -29,18 +33,16 @@ private:
     
     std::vector<std::vector<double>> tabEnergy; //!< neutrino energy in [J]
     std::vector<std::vector<double>> tabRate; //!< interaction rate in [1/m]
-    
     std::vector<std::vector<double>> tabE; //!< neutrino energy in [J]
     std::vector<std::vector<double>> tabs; //!< s_kin = s - m^2 in [J**2**]
     std::vector<std::vector<std::vector<double>>> tabCDF; //!< cumulative interaction rate
+    std::unordered_map<std::string, int> ratesDictionary;
     
-    std::unordered_map<int, std::string> ratesDictionary;
-    
-    ref_ptr<RelativisticInteraction> relInteraction;
+    mutable ref_ptr<RelativisticInteraction> relInteraction;
     
 public:
     
-    NeutrinoPhotonInteraction(ref_ptr<PhotonField> photonField, bool haveSecondaries = false, double limit = 0.1, ref_ptr<NeutrinoMixing> neutrinoMixing); //double thinning = 0,
+    NeutrinoPhotonInteraction(ref_ptr<PhotonField> photonField, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries = false, double limit = 0.1); //double thinning = 0,
     
     // set the target photon field
     void setPhotonField(ref_ptr<PhotonField> photonField);
@@ -75,11 +77,9 @@ public:
     void initRate(std::string filePath);
     void initCumulativeRate(std::string filePath);
     
-    void setRelativisticInteraction(double m1, double E, double s);
+    void setRelativisticInteraction(double m1, double E, double s) const;
     
-    double getDifferentialXS(double s, std::string variable, double variableValue, int idChannel, int seedDiffXS);
-    
-    int fromIDtoChannel(int ID);
+    int fromIDtoChannel(int ID) const;
     int interactionIndex(int ID, double mass) const;
     
     void process(Candidate *candidate) const;

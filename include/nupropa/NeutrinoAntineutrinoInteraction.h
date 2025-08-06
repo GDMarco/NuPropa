@@ -5,10 +5,11 @@
 #include <crpropa/Units.h>
 #include <crpropa/Random.h>
 
-#include "nupropa/NeutrinoBackground.h"
+#include "nupropa/NeutrinoField.h"
 #include "nupropa/Channels.h"
 #include "nupropa/ChannelsBundle.h"
 #include "nupropa/RelativisticInteraction.h"
+#include "nupropa/NeutrinoMixing.h"
 
 #include <string>
 
@@ -26,7 +27,7 @@ private:
     
     ref_ptr<Channels> channels;
     ref_ptr<ChannelsBundle> channelsBundle;
-    ref_ptr<RelativisticInteraction> relInteraction;
+    mutable ref_ptr<RelativisticInteraction> relInteraction;
     
     bool haveSecondaries;
     double limit;
@@ -75,7 +76,7 @@ public:
      */
     void setChannels(ref_ptr<Channels> channels);
     void setChannelsBundle(ref_ptr<Channels> channels, std::string fname);
-    void setRelativisticInteraction(double m1, double m2, double E, double s);
+    void setRelativisticInteraction(double m1, double m2, double E, double s) const;
     
     /** set a custom interaction tag to trace back this interaction
      * @param tag string that will be added to the candidate and output
@@ -84,7 +85,7 @@ public:
     std::string getInteractionTag() const;
     
     void process(crpropa::Candidate *candidate) const;
-    void performInteraction(Candidate *candidate, double mass) const;
+    void performInteraction(Candidate *candidate, double mass, int IDbkg) const;
     
 };
 

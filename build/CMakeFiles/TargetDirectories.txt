@@ -1,0 +1,7 @@
+/Applications/CRPropa/NuPropaLap/build/CMakeFiles/nupropa.dir
+/Applications/CRPropa/NuPropaLap/build/CMakeFiles/edit_cache.dir
+/Applications/CRPropa/NuPropaLap/build/CMakeFiles/rebuild_cache.dir
+/Applications/CRPropa/NuPropaLap/build/CMakeFiles/list_install_components.dir
+/Applications/CRPropa/NuPropaLap/build/CMakeFiles/install.dir
+/Applications/CRPropa/NuPropaLap/build/CMakeFiles/install/local.dir
+/Applications/CRPropa/NuPropaLap/build/CMakeFiles/install/strip.dir

@@ -29,7 +29,7 @@ public:
     NeutrinoOscillation();
     NeutrinoOscillation(ref_ptr<NeutrinoMixing> neutrinoMixing);
     
-    setNeutrinoMixing(ref_ptr<NeutrinoMixing> neutrinoMixing);
+    void setNeutrinoMixing(ref_ptr<NeutrinoMixing> neutrinoMixing);
     
     void process(crpropa::Candidate *candidate) const;
     

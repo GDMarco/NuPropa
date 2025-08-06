@@ -43,9 +43,10 @@ public:
     double findClosestRedshift(double z, const std::vector<double> &redshifts) const;
     void selectIndexes(std::string massCombRedshift, int ID, int IDbkg);
     std::vector<std::string> getAlphasBetas(int ID, int IDbkg) ;
-
-    std::vector<std::vector<double>> selectedRates(std::vector<int> indexes);
-    std::vector<std::vector<double>> selectedEnergies(std::vector<int> indexes);
+    std::vector<int> selectProdChanId();
+    
+    std::vector<std::vector<double>> selectedRates(const std::vector<int>& indexes);
+    std::vector<std::vector<double>> selectedEnergies(const std::vector<int>& indexes);
     
     double getRate(int ID, int IDBkg, std::string massComb, double z, double E);
     

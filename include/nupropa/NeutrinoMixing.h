@@ -24,10 +24,10 @@ private:
     
     double mass1 = 0;
     double mass2 =  8.3e-3;
-    double mass2 =  50e-3; // eV, maybe needed initialisation
+    double mass3 =  50e-3; // eV, maybe needed initialisation
     
     Eigen::Matrix3cd UpmnsMatrix;
-    Eigen::Matrix3cd flavourMassProbabilities;
+    Eigen::Matrix3d flavourMassProbabilities;
     
     std::array<double, 3> massValues = {mass1, mass2, mass3};
     
@@ -52,7 +52,7 @@ public:
         // check for consistency with experimental bounds on the sum
     }
     
-    Eigen::Matrix3cd buildUpmnsMatrix();
+    void buildUpmnsMatrix();
     
     Eigen::Matrix3cd getUpmnsMatrix() {
         return this->UpmnsMatrix;
@@ -62,10 +62,10 @@ public:
         return this->flavourMassProbabilities;
     }
     
-    int IdToFlavorIndex(int ID);
-    int flavorIndexToId(int index);
+    int IdToFlavourIndex(int ID);
+    int flavourIndexToId(int index);
     double massIndexToMass(int index); // mass returned in eV
-    int massToMassIndex(double mass);
+    int massToIndexMass(double mass);
     
     double fromFlavourToMass(int ID);
     int fromMassToFlavour(double mass);

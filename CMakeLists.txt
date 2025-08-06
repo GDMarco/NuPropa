@@ -4,13 +4,15 @@ cmake_minimum_required(VERSION 2.8.12)
 set(PLUGINNAME "nupropa")
 project(${PLUGINNAME} C CXX)
 
+message(STATUS "Building NuPropa...")
+
 find_package(PythonInterp)
 find_package(PythonLibs)
 find_package(SWIG REQUIRED)
 
 # require C++11
 # Note: CRPropa requires C++11
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 # SWIG options
 option(ENABLE_SWIG_BUILTIN "Use SWIG builtin option" OFF) 
@@ -57,15 +59,24 @@ add_library(${PLUGINNAME} MODULE
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoPhotonInteraction.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Channels.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ChannelsBundle.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoBackground.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/RelativisticInteraction.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ParticleData.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoOscillation.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoMixing.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoField.cc
+)
+
+set_source_files_properties(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Channels.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ChannelsBundle.cc
+    PROPERTIES COMPILE_FLAGS "-std=c++17"
 )
 
 # /Applications/CRPropa/NuNuInteractionv1/CRPropa3/libs/kiss
 include_directories(include ${crpropaInstallPrefix}/libs/kiss)
+
+# to change!
+include_directories(include /Applications/CRPropa/ALPinist/CRPropa3/libs/eigen3)
 
 target_link_libraries(${PLUGINNAME} ${CRPROPA_LIB} ${PYTHON_LIBRARIES})
 
