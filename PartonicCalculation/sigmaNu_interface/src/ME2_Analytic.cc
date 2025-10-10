@@ -325,16 +325,46 @@ double ME2_Analytic::nunubar_ZZ(int i1, int i2, int i3, int i4, KinematicData &K
 	// For on-shell gauge boson production, the limit gamma_v -> 0 is taken.
 	// MW2, MZ2 are real valuted parameters.
 	double MZ2 = MZ2C.real();
+	// // Propagator without width effect ( s12  >= 2 MW2 > MZ2 )
+   // complex<double> prefactor = 4. * pow(ALPHA,2) * pow(pi,2);
+   // // gLnu in principle contains complex parts, can either keep them or throw them away to this order in alpha
+
+	// complex<double> ME2 = 64.*pow(gLnu,2)*pow(MZ2 - s13,-2)*(2*s12*pow(MZ2,3) - MZ2*s12*pow(s12 - 2*s13,2) - 
+   //   2*pow(MZ2,2)*(-(s12*s13) + pow(s12,2) + pow(s13,2)) + 
+   //   s13*(-3*s13*pow(s12,2) + pow(s12,3) + 4*s12*pow(s13,2) - 2*pow(s13,3)))*pow(MZ2 - s12 + s13,-2)*
+   // pow(conj(gLnu),2);
+
+   // return prefactor.real() * ME2.real();
+double ME2_Analytic::nunubar_ZZ(int i1, int i2, int i3, int i4, KinematicData &Kin ){
+	if( i1 * i2 > 3 ){
+		cerr << "nunubar_ZZ: initial-state fermions required\n";
+		exit(0);
+	}	
+	// Kinematics
+	double s12 = 2.0*Kin.pij(i1,i2);
+	double s13 = 2.0*Kin.pij(i1,i3);
+	// For on-shell gauge boson production, the limit gamma_v -> 0 is taken.
+	// MW2, MZ2 are real valuted parameters.
+	double MZ2 = MZ2C.real();
 	// Propagator without width effect ( s12  >= 2 MW2 > MZ2 )
-   complex<double> prefactor = 4. * pow(ALPHA,2) * pow(pi,2);
+   complex<double> prefactor = pow(ALPHA,2) * pow(pi,2) * pow(gLnu,2) * pow(conj(gLnu),2);
    // gLnu in principle contains complex parts, can either keep them or throw them away to this order in alpha
 
-	complex<double> ME2 = 64.*pow(gLnu,2)*pow(MZ2 - s13,-2)*(2*s12*pow(MZ2,3) - MZ2*s12*pow(s12 - 2*s13,2) - 
-     2*pow(MZ2,2)*(-(s12*s13) + pow(s12,2) + pow(s13,2)) + 
-     s13*(-3*s13*pow(s12,2) + pow(s12,3) + 4*s12*pow(s13,2) - 2*pow(s13,3)))*pow(MZ2 - s12 + s13,-2)*
-   pow(conj(gLnu),2);
-
+	complex<double> ME2 = 16*pow(MZ2,-1)*pow(MZ2 - s13,-2)*(8*(MZ2*(s12 - 2*s13) + s12*(-s12 + s13))*pow(MZ2,3) + 
+     8*s12*pow(MZ2,4) - 4*pow(MZ2,2)*(8*(s12 - 2*s13)*pow(MZ2,2) + 
+        2*MZ2*(6*s12*s13 - 3*pow(s12,2) + pow(s13,2)) + 
+        s12*(-7*s12*s13 + 3*pow(s12,2) + 4*pow(s13,2))) + 
+     MZ2*(-12*s12*(s12 - 2*s13)*pow(MZ2,2) + 24*(s12 - 2*s13)*pow(MZ2,3) - 
+        4*MZ2*(-5*s13*pow(s12,2) + 2*pow(s12,3) - 2*s12*pow(s13,2) + 4*pow(s13,3)) + 
+        s12*(-6*s13*pow(s12,2) + 5*pow(s12,3) - 8*s12*pow(s13,2) + 8*pow(s13,3))) + 
+     MZ2*(-12*s12*(s12 - 2*s13)*pow(MZ2,2) + 10*s13*pow(s12,3) - 5*pow(s12,4) - 
+        4*pow(s12,2)*pow(s13,2) + 8*s12*pow(s13,3) + 
+        8*MZ2*(-4*s13*pow(s12,2) + 2*pow(s12,3) - s12*pow(s13,2) + 2*pow(s13,3)) - 8*pow(s13,4)))*
+   pow(MZ2 - s12 + s13,-2);
+   
    return prefactor.real() * ME2.real();
+}
+   
 }
 
 

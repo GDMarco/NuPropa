@@ -256,6 +256,16 @@ void Variables::init_channels(){
 	process_map.emplace( 32, "nu_m~ A -> W- m+");
 	process_map.emplace( 33, "nu_t~ A -> W- t+");
 
+        // Add diboson processes
+        // nu nubar > W- W+
+        process_map.emplace( 34, "nu_e nu_e~ -> W- W+");
+        process_map.emplace( 35, "nu_m nu_m~ -> W- W+");
+        process_map.emplace( 36, "nu_t nu_t~ -> W- W+");
+        // nu nubar > Z Z
+        process_map.emplace( 37, "nu_e nu_e~ -> Z Z");
+        process_map.emplace( 38, "nu_m nu_m~ -> Z Z");
+        process_map.emplace( 39, "nu_t nu_t~ -> Z Z");	
+
 	// 99) e- e+ > Q Qbar [testing channel]
 	process_map.emplace( 99, "e- e+ -> c c~");	
 
@@ -502,6 +512,32 @@ void Variables::init_channel_information(int channel, int *pdgs, double *masses)
 	if( channel == 33 ){
 		masses[0] = mw; masses[1] = mtau;
 	}
+        // 34-39 diboson processes
+        // process_map.emplace( 34, "nu_e nu_e~ -> W- W+");
+        if( channel == 34 ){
+                masses[0] = mw; masses[1] = mw;
+        }       
+        // process_map.emplace( 35, "nu_m nu_m~ -> W- W+");
+        if( channel == 35 ){
+                masses[0] = mw; masses[1] = mw;
+        }       
+        // process_map.emplace( 36, "nu_t nu_t~ -> W- W+");
+        if( channel == 36 ){
+                masses[0] = mw; masses[1] = mw;
+        }
+        // process_map.emplace( 37, "nu_e nu_e~ -> Z Z");
+        if( channel == 37 ){
+                masses[0] = mz; masses[1] = mz;
+        }       
+        // process_map.emplace( 38, "nu_m nu_m~ -> Z Z");
+        if( channel == 38 ){
+                masses[0] = mz; masses[1] = mz;
+        }       
+        // process_map.emplace( 39, "nu_t nu_t~ -> Z Z");
+        if( channel == 39 ){
+                masses[0] = mz; masses[1] = mz;
+        }
+
 
 	// debugging channel
 	if( channel == 99 ){

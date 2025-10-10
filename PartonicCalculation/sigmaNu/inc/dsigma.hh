@@ -11,3 +11,7 @@ extern double dsigma_channels(KinematicData &, int );
 extern double sigma_nu_incl(double shat, int chan);
 
 extern double sigma_Wl_incl(double shat, int chan);
+
+extern double sigma_ZZ_incl(double shat);
+extern double sigma_ZZ_incl_Rhorry(double shat);
+extern double sigma_WW_incl(double shat);

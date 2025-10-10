@@ -78,6 +78,11 @@ double dsigma_channels( KinematicData &Kin, int channel_id ){
                 if( channel_id == 27 ) ME2 = ME2_Analytic::nunux_ffx(1,2,3,4, Kin, 12, 15);
                 // 28-33
                 if( channel_id > 27 and channel_id < 34 ) ME2 = ME2_Analytic::nugumma_Wl(1,2,3,4, Kin);
+                // 34-36
+                if( channel_id >= 34 and channel_id <= 36 ) ME2 = ME2_Analytic::nunubar_WW(1,2,3,4, Kin);
+                // 37-39
+                if( channel_id >= 37 and channel_id <= 39 ) ME2 = ME2_Analytic::nunubar_ZZ(1,2,3,4, Kin);
+
 
                 // testing channel, for charm production
                 if( channel_id == 99 ) ME2 = ME2_Analytic::eeB0g0NCM(1,2,3,4, Kin, 11, 4);
@@ -203,6 +208,46 @@ double sigma_nu_incl(double shat, int chan){
         return 0.0;
 }
 
+// nu nbar > W W, channels 34-36
+double sigma_WW_incl(double shat){
+        double y = shat / pow(mw,2);
+        double beta = sqrt(1.-4/y);
+        double LB = log( (1.+beta)/(1.-beta) );
+
+        double prefac = pow(gf,2) * shat * beta / ( 12. * pi );
+        // Eq 2.6 of https://cds.cern.ch/record/244041/files/PhysRevD.47.5247.pdf
+
+        double sigma = pow(beta,2) * pow(mw,4) / pow( ( shat - pow(mz,2) ), 2) * ( 12. + 20. * y + y*y )
+        + 2. * pow(mw,2) / ( shat - pow(mz,2) ) / pow(y,2) * ( 24. + 28. * y - 18. * pow(y,2) - pow(y,3) + 48. / (beta * y) * (1. + 2. * y) * LB )
+        + 1. / pow(y,2) * ( pow(y,2) + 20. * y - 48. - 48. / ( beta * y ) * ( 2. - y ) * LB );
+
+        return prefac * sigma * hbarc2;
+}
+
+// nu nbar > Z Z, channels 37-39
+double sigma_ZZ_incl(double shat){
+        double y = shat / pow(mz,2);
+        double beta = sqrt(1.-4/y);
+        double LB = log( (1.+beta)/(1.-beta) );
+        double sigma = pow(gf*mz,2) * beta / pi / ( y - 2 ) * ( 2. / y - 1. + ( 4. + pow(y,2) ) / ( 2. * pow(y,2) * beta ) * LB );
+        return sigma * hbarc2;
+}
+
+// My own computation
+double sigma_ZZ_incl_Rhorry(double shat){
+        double y = shat/pow(mz,2);
+        double sigma = 512.*pow(-2 + y,-1)*pow((-4 + y)*y,-1/2.)*
+        (((-log(-1 + (-2 + y)/sqrt((-4 + y)*y)) + log(1 + (-2 + y)/sqrt((-4 + y)*y)))*(4 + pow(y,2)))/
+        2. + 2*pow((-4 + y)*y,1/2.) - pow((-4 + y)*pow(y,3),1/2.));
+
+        // velocity factor lambda^0.5 = sqrt(1-4mz^2/s12) = sqrt( 1 - 4 / y)
+        double ps_factor = 1. / (16.*pi) * sqrt( 1. - 4 / y);
+        complex<double> prefactor = pow(ALPHA,2) * pow(pi,2) * pow(gLnu,2) * pow(conj(gLnu),2);
+        double flux = 1. / ( 2. * shat );
+        return sigma * (ps_factor * prefactor.real() * flux) * hbarc2;
+}
+
+
 
 // The neutrino + photon > W + l, cross-section Seckl 9709290 - Eq. (2)
 
@@ -234,5 +279,8 @@ double sigma_Wl_incl(double shat, int chan){
 
         return sqrt(2.) * ALPHA.real() * gf * sigma * hbarc2;
 }
+
+
+
 
 

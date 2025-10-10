@@ -70,7 +70,7 @@ std::array<double,2> integration::vegasC4(int f(const int *ndim, const cubareal 
   #undef GRIDNO
   #undef STATEFILE
   #undef MAXEVAL
-  #define NSTART 1e4
+  #define NSTART 2e4
   #define NINCREASE 0//100000
   #define GRIDNO gridnum
   #define STATEFILE ""
@@ -89,7 +89,7 @@ std::array<double,2> integration::vegasC4(int f(const int *ndim, const cubareal 
   cout << endl << "Warm-up run comlete, now performing final integration" << endl;
   #undef NSTART
   #undef NINCREASE
-  #define NSTART 2e4
+  #define NSTART 2e5
   #define NINCREASE 100000//1000000
   cubareal integral[1], error[1], prob[1]; 
   Vegas(NDIM, NCOMP, f, data, NVEC,

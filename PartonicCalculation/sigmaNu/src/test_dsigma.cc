@@ -114,6 +114,9 @@ int Vegas_Interface(const int *ndim, const cubareal xx[],
 		return 0;
 	}
 
+	// cout << masses[0] << endl;
+	// cout << masses[1] << endl;
+
 	// Create phase-space
 	KinematicData Kin = Generate_Phase_Space( xx, nfinal, masses, nrandom, "ee" );
 	// Manually set as(muR) currently not used
@@ -124,8 +127,17 @@ int Vegas_Interface(const int *ndim, const cubareal xx[],
 		return 0;
 	}
 
+
+
 	// New function ordered by channels (integers)
 	dsigma_summed = dsigma_channels( Kin, channel );
+
+	if( isnan(dsigma_summed) or isinf(dsigma_summed) ){
+		cout << "Encountered unstable PS point\n";
+		debug_PS_point( Kin );
+	}
+
+	// cout << dsigma_summed << endl;
 
 	// abort();
 	// Return the (integrand) differential cross-section in pb
@@ -158,6 +170,7 @@ int main(int argc, char *argv[])
   mu0 = mz;
 	mu_loop = 100.;	// No results depend on mu_reg value
 	// Set the collision environment (pp collisions at LHC 13 TeV)
+	// Ecms = 1e6;
 	Ecms = 1e5;
 	Ecms2 = pow(Ecms,2);
 
@@ -201,7 +214,7 @@ int main(int argc, char *argv[])
 	// Information for Vegas //
 	///////////////////////////	
 	double warmup_precision = 1e-2;
-	double integration_precision = 1e-3;
+	double integration_precision = 1e-4;
 	int grid_no = 3;
 	grid_cache = grid_no;
 	int max_evaluations = 2e7;
@@ -248,9 +261,17 @@ int main(int argc, char *argv[])
 		cout << "Integral = " << sigma_fiducial[0] << endl;
 		cout << "Error = " << sigma_fiducial[1] << endl;	
 
-		cout << sigma_Wl_incl( Ecms2, channel ) << endl;
-
+		// cout << sigma_Wl_incl( Ecms2, channel ) << endl;
 		// cout << sigma_nu_incl( Ecms2, channel ) << endl;
+
+		if( channel >= 34 and channel <= 36 ){
+			cout << "Analytic result = " << sigma_WW_incl( Ecms2 ) << endl;
+		}
+		if( channel >= 37 and channel <= 39 ){
+			cout << "Analytic result = " << sigma_ZZ_incl( Ecms2 ) << endl;
+			cout << "Analytic result Rhorry = " << sigma_ZZ_incl_Rhorry( Ecms2 ) << endl;
+
+		}
 
 		// Save this information to the file
 		ofile_results << "# Sigma Fiducial: sigma\terror\tsigma_analytic\tratio" << endl;
