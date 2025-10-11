@@ -340,8 +340,9 @@ double ME2_Analytic::nunubar_ZZ(int i1, int i2, int i3, int i4, KinematicData &K
         4*pow(s12,2)*pow(s13,2) + 8*s12*pow(s13,3) + 
         8*MZ2*(-4*s13*pow(s12,2) + 2*pow(s12,3) - s12*pow(s13,2) + 2*pow(s13,3)) - 8*pow(s13,4)))*
    pow(MZ2 - s12 + s13,-2);
-   
-   return prefactor.real() * ME2.real();
+
+   // Note the additional symmetry factor of 0.5
+   return 0.5 * prefactor.real() * ME2.real();
 }
 
 

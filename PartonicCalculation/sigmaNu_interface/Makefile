@@ -5,7 +5,7 @@
 # your CUBA 4.0 path (testing: /usr/local/Cuba-4.0)
 # CUBA_PATH = /Users/rhorry/Research/BUILDS/CUBA/
 
-CXX=g++-14
+CXX=g++-15
 # compiler flags: -Wall -O2
 CXXFLAGS = -Wall -O2 -std=c++17
 

@@ -128,8 +128,12 @@ double dsigma_channels( KinematicData &Kin, int channel_id ){
                 double nu_spin_correction = ( channel < 100 )? 4.: 2.;
                 if( channel > 27 and channel < 34 ) nu_spin_correction = 2.;
                 cout << "Apply correction to Recola |M|^2 for neutrino spin averaging of " << nu_spin_correction << endl;
+                cout << "ME2 (internal) = " << ME2 << endl;
+                cout << "ME2 (external) = " << ME2_rcl * nu_spin_correction << endl;
                 cout << setprecision(15) << "ME2 / ME2_recola = " << ME2 / ( ME2_rcl * nu_spin_correction ) << endl;
+                debug_PS_point( Kin );
                 cout << endl;
+                exit(0);
         }
 
         return ME2 * Kin.weight() / Kin.flux();
@@ -244,7 +248,9 @@ double sigma_ZZ_incl_Rhorry(double shat){
         double ps_factor = 1. / (16.*pi) * sqrt( 1. - 4 / y);
         complex<double> prefactor = pow(ALPHA,2) * pow(pi,2) * pow(gLnu,2) * pow(conj(gLnu),2);
         double flux = 1. / ( 2. * shat );
-        return sigma * (ps_factor * prefactor.real() * flux) * hbarc2;
+        // Symmetry factor
+        double sym_fac = 2.0;
+        return sigma * (ps_factor * prefactor.real() * flux / sym_fac ) * hbarc2;
 }
 
 

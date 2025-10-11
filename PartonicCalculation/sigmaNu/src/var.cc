@@ -189,6 +189,9 @@ void Variables::init_recola(){
 	Recola::set_complex_mass_scheme_rcl();
 	Recola::use_gfermi_scheme_and_set_alpha_rcl( ALPHA.real() );
 
+	// Recola::set_pole_mass_z_rcl(mz,0.0);
+	// Recola::set_on_shell_scheme_rcl();
+
 	// Recola::set_resonant_particle_rcl ("Z");
 	// Recola::set_resonant_particle_rcl ("W+");
 	// Recola::set_resonant_particle_rcl ("W-");
@@ -361,6 +364,15 @@ void Variables::init_channels(){
 	process_map_rcl.emplace( 31, "nu_e~ A -> W- e+");
 	process_map_rcl.emplace( 32, "nu_mu~ A -> W- mu+");
 	process_map_rcl.emplace( 33, "nu_tau~ A -> W- tau+");
+
+        // nu nubar > W- W+
+        process_map_rcl.emplace( 34, "nu_e nu_e~ -> W- W+");
+        process_map_rcl.emplace( 35, "nu_m nu_m~ -> W- W+");
+        process_map_rcl.emplace( 36, "nu_t nu_t~ -> W- W+");
+        // nu nubar > Z Z
+        process_map_rcl.emplace( 37, "nu_e nu_e~ -> Z Z");
+        process_map_rcl.emplace( 38, "nu_m nu_m~ -> Z Z");
+        process_map_rcl.emplace( 39, "nu_t nu_t~ -> Z Z");	
 
 	// 99) e- e+ > Q Qbar [testing channel]
 	process_map_rcl.emplace( 99, "e- e+ -> c c~");		

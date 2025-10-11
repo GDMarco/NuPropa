@@ -114,9 +114,6 @@ int Vegas_Interface(const int *ndim, const cubareal xx[],
 		return 0;
 	}
 
-	// cout << masses[0] << endl;
-	// cout << masses[1] << endl;
-
 	// Create phase-space
 	KinematicData Kin = Generate_Phase_Space( xx, nfinal, masses, nrandom, "ee" );
 	// Manually set as(muR) currently not used
@@ -126,8 +123,6 @@ int Vegas_Interface(const int *ndim, const cubareal xx[],
 		ff[0] = 0.0;
 		return 0;
 	}
-
-
 
 	// New function ordered by channels (integers)
 	dsigma_summed = dsigma_channels( Kin, channel );
@@ -249,11 +244,31 @@ int main(int argc, char *argv[])
   struct timeval t0, t1;
   gettimeofday(&t0,NULL);
 
+  // Test a single phase-space point
+
+	// double pset[n][4];
+	// for( int i = 0; i < n; i++){
+	// 	for( int j = 0; j < 4; j++)
+	// 		pset[i][j] = Kin.p(i+1).pi(j);
+	// }
+
+	// // for( int i = 0; i < n; i++)
+	// // 	cout << pset[i][0] << " " 
+	// // 		 << pset[i][1] << " "
+	// // 		 << pset[i][2] << " "
+	// // 		 << pset[i][3] << "\n";
+	// string order = (virt)? "NLO":"LO";
+
+	// double temp[2];
+	// Recola::compute_process_rcl(process,pset,order,temp);  
+
 
   // Fiducial results for isetup < 3
   if( isetup == 0 ){
 		// Run a test integral, returns an array with two entries < integral, error >, accessed via test_setup[0] and test_setup[1] respectively.
 		array<double,2> sigma_fiducial = {0.};
+
+		active_recola = false;
 		//			
 		sigma_fiducial = integration::vegasC4(Vegas_Interface, warmup_precision, integration_precision, cuba_dimensions, NULL, seed_cache, grid_cache, max_evaluations );
 
