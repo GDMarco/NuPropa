@@ -23,8 +23,8 @@ private:
     double theta13, theta23, theta12, delta; // parameters for the U matrix
     
     double mass1 = 0;
-    double mass2 =  8.3e-3;
-    double mass3 =  50e-3; // eV, maybe needed initialisation
+    double mass2 = 8.3e-3;
+    double mass3 = 50e-3; // eV, maybe needed initialisation
     
     Eigen::Matrix3cd UpmnsMatrix;
     Eigen::Matrix3d flavourMassProbabilities;

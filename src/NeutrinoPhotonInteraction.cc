@@ -2,6 +2,7 @@
 #include "nupropa/RelativisticInteraction.h"
 #include "nupropa/ParticleData.h"
 #include "nupropa/NeutrinoMixing.h"
+
 #include <crpropa/Units.h>
 #include <crpropa/Random.h>
 #include <crpropa/Referenced.h>
@@ -10,6 +11,7 @@
 #include <crpropa/PhotonBackground.h>
 
 #include <string>
+#include <iomanip>
 #include <fstream>
 #include <limits>
 #include <stdexcept>
@@ -20,13 +22,12 @@ namespace nupropa {
 
 using namespace crpropa;
 
-NeutrinoPhotonInteraction::NeutrinoPhotonInteraction(ref_ptr<PhotonField> photonField, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries,  double limit) { //double thinning,
+NeutrinoPhotonInteraction::NeutrinoPhotonInteraction(ref_ptr<PhotonField> photonField, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries, double limit) { //double thinning,
     
     setPhotonField(photonField);
     setHaveSecondaries(haveSecondaries);
     setLimit(limit);
     //setThinning(thinning);
-    
     setNeutrinoMixing(neutrinoMixing);
     
 }
@@ -95,8 +96,9 @@ void NeutrinoPhotonInteraction::initRate(std::string filePath) {
     
     tabEnergy.clear();
     tabRate.clear();
+    ratesDictionary.clear();
     
-    std::vector<std::string> flavours = {"Electron", "Muon", "Tauon"};
+    std::vector<std::string> flavours = {"Electron", "Muon", "Tau"};
     std::vector<std::string> masses = {"m1", "m2", "m3"};
     
     int i = 0;
@@ -113,12 +115,15 @@ void NeutrinoPhotonInteraction::initRate(std::string filePath) {
     for (const auto& f : flavours) {
         for (const auto& a : masses) {
             
-            loadRateFile(filePath + "Neutrino" + f + "PhotonInteraction/" +  a + ".txt");
-            ratesDictionary[f + "_" + this->photonField->getFieldName() + "_" + a] = i;
+            loadRateFile(filePath + "Neutrino" + f + "PhotonInteraction/rate_" + this->photonField->getFieldName() + "_" +  a + ".txt");
+            ratesDict[f + "_" + this->photonField->getFieldName() + "_" + a] = i;
+            
             i = i + 1;
             
         }
     }
+    
+    
     
     this->ratesDictionary = ratesDict;
     
@@ -176,7 +181,7 @@ void NeutrinoPhotonInteraction::initCumulativeRate(std::string filePath) {
     tabs.clear();
     tabCDF.clear();
     
-    std::vector<std::string> flavours = {"Electron", "Muon", "Tauon"};
+    std::vector<std::string> flavours = {"Electron", "Muon", "Tau"};
     std::vector<std::string> masses = {"m1", "m2", "m3"};
     
     // 3 masses for each redshift and each flavour! m1, m2, m1, ...
@@ -190,7 +195,7 @@ void NeutrinoPhotonInteraction::initCumulativeRate(std::string filePath) {
     for (const auto& f : flavours) {
         for (const auto& a : masses) {
                 
-            loadCumulativeRateFile(filePath + "Neutrino" + f + "PhotonInteraction/" +  a + ".txt");
+            loadCumulativeRateFile(filePath + "Neutrino" + f + "PhotonInteraction/cdf_" + this->photonField->getFieldName() + "_" +  a + ".txt");
         
         }
     }
@@ -215,14 +220,14 @@ int NeutrinoPhotonInteraction::interactionIndex(int ID, double mass) const {
     }
     
     auto it = this->ratesDictionary.find(alpha + "_" + massComb);
-
+    
     int index;
     if (it != this->ratesDictionary.end()) {
         index = it->second;
     } else {
         throw std::runtime_error("Index not found in the dictionary rate!");
     }
-    
+
     return index;
 }
 
@@ -263,7 +268,7 @@ class NeutrinoPhotonSecondariesDistribution {
         for (size_t i = 0; i < Ns + 1; ++i)
             s_values[i] = s_min * exp(i * dls);
         
-        if (variable != "costh13_com")
+        if (variable != "dsigdcosth")
             throw std::runtime_error("The only available variable to compute the differential cross section is costheta13_com!");
         
         // tabulating the costh13_com bin borders
@@ -275,7 +280,6 @@ class NeutrinoPhotonSecondariesDistribution {
         // Random &random = Random::instance();
         // int seedDiffXS = random.randInt();
         // not affecting the results
-        
         int seedDiffXS = 1;
         
         // for each s and costh13_com tabulate the cumulative differential cross section
@@ -298,49 +302,64 @@ class NeutrinoPhotonSecondariesDistribution {
     }
     
     double getDifferentialXS(double s, std::string variable, double variableValue, int idChannel, int seedDiffXS) {
-        
+         
         std::string partonicPath = "/Applications/CRPropa/NuPropaLap/PartonicCalculation/sigmaNu_interface/"; // to change with NUPROPA path
         std::string interfacePath = partonicPath + "bin/";
-
-        std::ostringstream cmd;
-        cmd << interfacePath << "Main_Interface.exe"
-            << " -c " << idChannel
-            << " -s " << seedDiffXS
-            << " -E " << std::sqrt(s / GeV / GeV); // Ecms has to be given in GeV
-        
-        int result = std::system(cmd.str().c_str());
-        if (result != 0) {
-            std::ostringstream oss;
-            oss << "Error: Failed to run Main_Interface.exe, with exit code: " << result;
-            throw std::runtime_error(oss.str());
-        }
         
         std::ostringstream ss;
-        ss << std::scientific << std::setprecision(5) << s / GeV / GeV;
-        std::string Ecms2 = ss.str();
-        
+        ss << std::scientific << std::setprecision(5) << std::sqrt(s / GeV / GeV);
+        std::string Ecms = ss.str();
+
         std::string filePath = partonicPath + "dataDifferentialXS/channel" + std::to_string(idChannel) + "/";
-        std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) + "_EcmsSq" + Ecms2 + "_s" + std::to_string(seedDiffXS) + ".txt";
+        std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) +
+                               "_Ecms" + Ecms + "_s" + std::to_string(seedDiffXS) + ".txt";
+
+        if (!std::ifstream(filename)) {
+            std::ostringstream cmd;
+            cmd << interfacePath << "Main_Interface.exe"
+                << " -c " << idChannel
+                << " -s " << seedDiffXS
+                << " -E " << std::sqrt(s / GeV / GeV); // Ecms in GeV
+
+            int result = std::system(cmd.str().c_str());
+            if (result != 0) {
+                std::ostringstream oss;
+                oss << "Error: Failed to run Main_Interface.exe, with exit code: " << result;
+                throw std::runtime_error(oss.str());
+            }
+        }
         
         std::vector<double> variableScan;
         std::vector<double> differentialXS;
         
         std::ifstream infile(filename);
-        
-        if(!infile) {
+
+        if (!infile) {
             std::ostringstream oss;
             oss << "Error: could not open the differentialXS file. The filename is: " << filename;
             throw std::runtime_error(oss.str());
         } else {
-            
+            std::string line;
             double a, b;
-            while (infile >> a >> b) {
-                variableScan.push_back(a);
-                differentialXS.push_back(b);
+            
+            while (std::getline(infile, line)) {
+                // skip empty lines or lines starting with '#'
+                if (line.empty() || line[0] == '#') continue;
+
+                std::istringstream iss(line);
+                if (iss >> a >> b) {
+                    variableScan.push_back(a);
+                    differentialXS.push_back(b);
+                } else {
+                    // if parsing failed on a non-comment line, optionally throw or skip
+                    std::ostringstream oss;
+                    oss << "Error: could not parse line: \"" << line << "\" in file " << filename;
+                    throw std::runtime_error(oss.str());
+                }
             }
             infile.close();
         }
-        
+
         double diffXS = interpolate(variableValue, variableScan, differentialXS);
         return diffXS;
         
@@ -354,7 +373,6 @@ class NeutrinoPhotonSecondariesDistribution {
         Random &random = Random::instance();
         size_t j = random.randBin(s0); // draw random bin (lower bin boundary returned)
         double costh13_comRand = costh_min + j * dcosth;
-        
         return costh13_comRand;
     }
     
@@ -362,9 +380,9 @@ class NeutrinoPhotonSecondariesDistribution {
 
 int NeutrinoPhotonInteraction::fromIDtoChannel(int ID) const {
     if (ID == 12 || ID == 14 || ID == 16)
-        return (ID + 44) / 2;   // neutrinos: 12→28, 14→29, 16→30
+        return (ID + 44) / 2;   // neutrinos: 12 to 28, 14 to 29, 16 to 30
     if (ID == -12 || ID == -14 || ID == -16)
-        return (50 - ID) / 2;   // antineutrinos: -12→31, -14→32, -16→33
+        return (50 - ID) / 2;   // antineutrinos: -12 to 31, -14 to 32, -16 to 33
     return -1; // invalid ID
 }
 
@@ -417,10 +435,11 @@ void NeutrinoPhotonInteraction::performInteraction(Candidate *candidate, int ind
     double s = lo + random.rand() * (hi - lo); // should I add the neutrino masses? since it is the s_kin!!
     
     // sample the cosine of theta13_com
-    std::string variable = "costh13_com";
+    std::string variable = "dsigdcosth";
     static NeutrinoPhotonSecondariesDistribution distribution(variable, channelID, sThr);
     double costh13_com = distribution.sample(s);
     
+    std::cout << "costh13_com: " << costh13_com << std::endl;
     setRelativisticInteraction(mass, E, s);
     
     // energies of the secondary particles
@@ -435,8 +454,7 @@ void NeutrinoPhotonInteraction::performInteraction(Candidate *candidate, int ind
     
 }
 
-void NeutrinoPhotonInteraction::process(Candidate *candidate) const
-{
+void NeutrinoPhotonInteraction::process(Candidate *candidate) const {
     
     // scale the electron energy instead of background photons
     double z = candidate->getRedshift();

@@ -13,7 +13,6 @@
 
 #include <string>
 
-
 namespace nupropa {
 
 using namespace crpropa;
@@ -48,7 +47,7 @@ private:
     
 public:
     
-    NeutrinoAntineutrinoInteraction(ref_ptr<NeutrinoField>, ref_ptr<Channels> channels, bool haveSecondaries, double limit, ref_ptr<NeutrinoMixing> neutrinoMixing); // double thinning = 0,
+    NeutrinoAntineutrinoInteraction(ref_ptr<NeutrinoField>, ref_ptr<Channels> channels, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries = false, double limit = 0.1); // double thinning = 0,
     
     // set the target neutrino field
     void setNeutrinoField(ref_ptr<NeutrinoField> neutrinoField);

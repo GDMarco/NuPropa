@@ -18,20 +18,22 @@ private:
     
     std::vector<std::string> interactionChannels;
     std::vector<std::vector<int>> productsID; // ID1, ID2(, ID3)
-    std::vector<bool> active;
+    std::vector<int> active;
     std::string interactionFolderPath = "/Applications/CRPropa/NuNuInteractionv1/CRPropa3-data-zDep/dataOff/NeutrinoInteractions/NeutrinoAntineutrinoInteraction/";
     
 public:
 // enum C++
     Channels();
     
-    Channels(std::vector<std::string> interactionChannels, std::vector<std::vector<int>> productsID, std::vector<bool> active, std::string interactionFolderPath);
+    Channels(std::vector<std::string> interactionChannels, std::vector<int> active);
+    
+    Channels(std::vector<std::string> interactionChannels, std::vector<int> active, std::string interactionFolderPath);
     
     std::vector<std::string> getInteractionChannels() const{
         return this->interactionChannels;
     };
     
-    std::vector<bool> getActiveChannels() const {
+    std::vector<int> getActiveChannels() const {
         return this->active;
     };
     std::string getInteractionFolderPath() const {
@@ -42,14 +44,11 @@ public:
     };
     int getChannelIndex(std::string interactioChannel) const;
     
-    void loadInteractionChannels(std::string interactionFolder);
-    void loadProductsID(std::string interactionFolder);
     void activeAll();
     
     void setInteractionChannels(std::vector<std::string> interactionChannels);
-    void setChannelsActive(std::vector<bool> active);
+    void setChannelsActive(std::vector<int> active);
     void setInteractionFolderPath(std::string interactionFolderPath);
-    void setProductsID(std::vector<std::vector<int>> productsID);
     void setInactiveChannel(std::string interactionChannel);
     
 };

@@ -41,7 +41,7 @@ private:
     mutable ref_ptr<RelativisticInteraction> relInteraction;
     
 public:
-    
+
     NeutrinoPhotonInteraction(ref_ptr<PhotonField> photonField, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries = false, double limit = 0.1); //double thinning = 0,
     
     // set the target photon field

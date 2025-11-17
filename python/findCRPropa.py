@@ -1,6 +1,9 @@
 # Returns the path to the crpropa swig_interface, install_prefix, or -1 if
 # crpropa is not found
 import sys
+
+sys.path.insert(0, "/Applications/CRPropa/NuGammaInteraction/CRPropa3/build")
+
 try:
 	import crpropa
 except ImportError:

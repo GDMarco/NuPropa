@@ -44,6 +44,9 @@
 using namespace nupropa;
 %}
 
+%template(StringVector) std::vector<std::string>;
+ %template(IntVector) std::vector<int>;
+
 /* import crpropa in wrapper */
 %import (module="crpropa") "crpropa.i"
 
@@ -68,6 +71,108 @@ using namespace nupropa;
 %template(RelativisticInteractionRefPtr) crpropa::ref_ptr<nupropa::RelativisticInteraction>;
 %feature("director") nupropa::RelativisticInteraction;
 
+/* see if they cause issues somewhere, probably not formally correct. It is also limited to give all the 4/5 args */
+%extend nupropa::NeutrinoPhotonInteraction {
+    // Full signature
+    NeutrinoPhotonInteraction(crpropa::PhotonField *photonField,
+                              nupropa::NeutrinoMixing *mixing,
+                              bool haveSecondaries,
+                              double limit) {
+        return new nupropa::NeutrinoPhotonInteraction(
+            crpropa::ref_ptr<crpropa::PhotonField>(photonField),
+            crpropa::ref_ptr<nupropa::NeutrinoMixing>(mixing),
+            haveSecondaries,
+            limit);
+    }
+
+    // photonField + mixing
+    NeutrinoPhotonInteraction(crpropa::PhotonField *photonField,
+                              nupropa::NeutrinoMixing *mixing) {
+        return new nupropa::NeutrinoPhotonInteraction(
+            crpropa::ref_ptr<crpropa::PhotonField>(photonField),
+            crpropa::ref_ptr<nupropa::NeutrinoMixing>(mixing));
+    }
+
+    // photonField + mixing + haveSecondaries
+    NeutrinoPhotonInteraction(crpropa::PhotonField *photonField,
+                              nupropa::NeutrinoMixing *mixing,
+                              bool haveSecondaries) {
+        return new nupropa::NeutrinoPhotonInteraction(
+            crpropa::ref_ptr<crpropa::PhotonField>(photonField),
+            crpropa::ref_ptr<nupropa::NeutrinoMixing>(mixing),
+            haveSecondaries);
+    }
+}
+
+%extend nupropa::NeutrinoNeutrinoInteraction {
+    // Full 4-argument version
+    NeutrinoNeutrinoInteraction(nupropa::NeutrinoField *neutrinoField,
+                                nupropa::NeutrinoMixing *mixing,
+                                bool haveSecondaries,
+                                double limit) {
+        return new nupropa::NeutrinoNeutrinoInteraction(
+            nupropa::ref_ptr<nupropa::NeutrinoField>(neutrinoField),
+            crpropa::ref_ptr<nupropa::NeutrinoMixing>(mixing),
+            haveSecondaries,
+            limit);
+    }
+
+    // 2-argument version
+    NeutrinoNeutrinoInteraction(nupropa::NeutrinoField *neutrinoField,
+                                nupropa::NeutrinoMixing *mixing) {
+        return new nupropa::NeutrinoNeutrinoInteraction(
+            nupropa::ref_ptr<nupropa::NeutrinoField>(neutrinoField),
+            crpropa::ref_ptr<nupropa::NeutrinoMixing>(mixing));
+    }
+
+    // 3-argument version
+    NeutrinoNeutrinoInteraction(nupropa::NeutrinoField *neutrinoField,
+                                nupropa::NeutrinoMixing *mixing,
+                                bool haveSecondaries) {
+        return new nupropa::NeutrinoNeutrinoInteraction(
+            nupropa::ref_ptr<nupropa::NeutrinoField>(neutrinoField),
+            crpropa::ref_ptr<nupropa::NeutrinoMixing>(mixing),
+            haveSecondaries);
+    }
+}
+
+%extend nupropa::NeutrinoAntineutrinoInteraction {
+    // Full 5-argument version
+    NeutrinoAntineutrinoInteraction(nupropa::NeutrinoField *neutrinoField,
+                                    nupropa::Channels *channels,
+                                    nupropa::NeutrinoMixing *mixing,
+                                    bool haveSecondaries,
+                                    double limit) {
+        return new nupropa::NeutrinoAntineutrinoInteraction(
+            nupropa::ref_ptr<nupropa::NeutrinoField>(neutrinoField),
+            crpropa::ref_ptr<nupropa::Channels>(channels),
+            crpropa::ref_ptr<nupropa::NeutrinoMixing>(mixing),
+            haveSecondaries,
+            limit);
+    }
+
+    // 3-argument version
+    NeutrinoAntineutrinoInteraction(nupropa::NeutrinoField *neutrinoField,
+                                    nupropa::Channels *channels,
+                                    nupropa::NeutrinoMixing *mixing) {
+        return new nupropa::NeutrinoAntineutrinoInteraction(
+            nupropa::ref_ptr<nupropa::NeutrinoField>(neutrinoField),
+            crpropa::ref_ptr<nupropa::Channels>(channels),
+            crpropa::ref_ptr<nupropa::NeutrinoMixing>(mixing));
+    }
+
+    // 4-argument version
+    NeutrinoAntineutrinoInteraction(nupropa::NeutrinoField *neutrinoField,
+                                    nupropa::Channels *channels,
+                                    nupropa::NeutrinoMixing *mixing,
+                                    bool haveSecondaries) {
+        return new nupropa::NeutrinoAntineutrinoInteraction(
+            nupropa::ref_ptr<nupropa::NeutrinoField>(neutrinoField),
+            crpropa::ref_ptr<nupropa::Channels>(channels),
+            crpropa::ref_ptr<nupropa::NeutrinoMixing>(mixing),
+            haveSecondaries);
+    }
+}
 
 /* include plugin parts to generate wrappers for */
 %include "nupropa/NeutrinoNeutrinoInteraction.h"

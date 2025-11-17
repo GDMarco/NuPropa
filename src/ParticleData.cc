@@ -14,7 +14,6 @@ using namespace crpropa;
 
 ParticleData::ParticleData() {
     
-    // to be converted in kg
     std::unordered_map<int, double> IDmass = {
         {211, 0.13957 * GeV / c_squared},   // Pion+
         {111, 0.13498 * GeV / c_squared},   // Pi0

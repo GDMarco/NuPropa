@@ -73,8 +73,7 @@ int NeutrinoMixing::flavourIndexToId(int index) {
         return 0;
 
     int pdg = pdgTable[index];
-    bool isAntineutrino = crpropa::Random::instance().rand() < 0.5;
-    return isAntineutrino ? -pdg : pdg;
+    return pdg;
 }
 
 int NeutrinoMixing::IdToFlavourIndex(int ID) {
@@ -109,7 +108,6 @@ int NeutrinoMixing::massToIndexMass(double mass) {
         if (std::abs(mass - this->massValues[i]) < epsilon)
             return i;
     }
-    
     return -1; // not found
 }
 
@@ -124,15 +122,16 @@ double NeutrinoMixing::fromFlavourToMass(int ID) {
     
     for (int i = 0; i < 3; ++i) {
         cumulative = cumulative + flavourMassProbabilities(alpha, i);
-        if (r < cumulative)
+        if (r < cumulative) {
             indexMass = i;
+            return massIndexToMass(indexMass); // in eV
+        }
     }
-    return massIndexToMass(indexMass); // in eV
+    return -2;
 }
 
 int NeutrinoMixing::fromMassToFlavour(double mass) {
-
-    int massIndex = massToIndexMass(mass); // mass in eV
+    
     if (massIndex < 0)
         return -1;
 
@@ -142,10 +141,12 @@ int NeutrinoMixing::fromMassToFlavour(double mass) {
     
     for (int alpha = 0; alpha < 3; ++alpha) {
         cumulative = cumulative + flavourMassProbabilities(alpha, massIndex); // |U_{α i}|²
-        if (r < cumulative)
+        if (r < cumulative) {
             index = alpha;
+            return flavourIndexToId(index);
+        }
     }
-    return flavourIndexToId(index);
+    return -2;
 }
 
 void NeutrinoMixing::precomputeOscillationTerms() {
@@ -181,7 +182,7 @@ int NeutrinoMixing::oscillateFlavour(int ID, double E, double L) {
     double phase20 = (massValues[2]  * massValues[2] - massValues[0] * massValues[0]) * L / E * conversionPhase;
     double phase21 = (massValues[2] * massValues[2] - massValues[1] * massValues[1]) * L / E * conversionPhase;
 
-    double P[3]; // Oscillation probabilities α → β
+    double P[3]; // oscillation probabilities α → β
     for (int beta = 0; beta < 3; ++beta) {
         double prob = (alpha == beta) ? 1.0 : 0.0;
         
@@ -202,17 +203,19 @@ int NeutrinoMixing::oscillateFlavour(int ID, double E, double L) {
     double total = P[0] + P[1] + P[2];
     for (int i = 0; i < 3; ++i)
         P[i] /= total;
-
+    
     // randomly select oscillated flavour index
     double r = crpropa::Random::instance().rand();
     double cumulative = 0;
     int IdOscillated;
     for (int beta = 0; beta < 3; ++beta) {
         cumulative += P[beta];
-        if (r < cumulative)
+        
+        if (r < cumulative) {
             IdOscillated = sign * flavourIndexToId(beta);
+            return IdOscillated;
+        }
     }
-    return IdOscillated;
 }
 
 } // end namespace nupropa

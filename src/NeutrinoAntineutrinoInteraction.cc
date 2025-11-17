@@ -19,7 +19,9 @@ namespace nupropa {
 
 using namespace crpropa;
 
-NeutrinoAntineutrinoInteraction::NeutrinoAntineutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, ref_ptr<Channels> channels, bool haveSecondaries, double limit, ref_ptr<NeutrinoMixing> neutrinoMixing) : Module() { // double thinning
+NeutrinoAntineutrinoInteraction::NeutrinoAntineutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, ref_ptr<Channels> channels, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries, double limit) : Module() { // double thinning
+    
+    std::cout << "In the constr: " << std::endl;
     
     setChannels(channels);
     setNeutrinoField(neutrinoField);
@@ -32,20 +34,17 @@ NeutrinoAntineutrinoInteraction::NeutrinoAntineutrinoInteraction(ref_ptr<Neutrin
 
 /**
  One assumes that the tables have been produced within the same computation, so the energy bins are the same.
- 
  In the case of the neutrino-antineutrino interactions the elastic scatterings furnish the tabEnergy, since they do not have interaction energy thresholds (almost)!
  */
 
-// channels have an unordered map <bool, "interaction">, maybe interaction tag? setChannels should be a way of filling this object, knowing how they are ordered!
 void NeutrinoAntineutrinoInteraction::setNeutrinoField(ref_ptr<NeutrinoField> neutrinoField) {
     this->neutrinoField = neutrinoField;
     this->neutrinoFieldMass = neutrinoField->getMass();
     std::string fname = neutrinoField->getFieldName();
     setDescription("NeutrinoAntineutrinoInteraction::Module" + fname);
-    setInteractionTag("NuNuInt");
+    setInteractionTag("NuAntiNuInt");
     
     setChannelsBundle(this->channels, fname);
-    // initRate(fname);
 }
 
 void NeutrinoAntineutrinoInteraction::setNeutrinoMixing(ref_ptr<NeutrinoMixing> neutrinoMixing) {
@@ -67,7 +66,7 @@ void NeutrinoNeutrinoInteraction::setThinning(double thinning) {
 */
 
  void NeutrinoAntineutrinoInteraction::setChannels(ref_ptr<Channels> channels) {
-    this->channels = channels;
+     this->channels = channels;
 }
 
 void NeutrinoAntineutrinoInteraction::setChannelsBundle(ref_ptr<Channels> channels, std::string fname) {
@@ -116,17 +115,14 @@ class NeutrinoAntineutrinoSecondariesDistribution {
         for (size_t i = 0; i < Ns + 1; ++i)
             s_values[i] = s_min * exp(i * dls);
         
-        if (variable != "costh13_com")
-            throw std::runtime_error("The only available variable to compute the differential cross section is costheta13_com!");
+        if (variable != "dsigdcosth")
+            throw std::runtime_error("The only available variable to compute the differential cross section is dsigdcosth!");
         
         // tabulating the costh13_com bin borders
         costh13_com_values = std::vector<double>(1001);
         for (size_t i = 0; i < Nrer + 1; ++i)
             costh13_com_values[i] = costh_min + i * dcosth;
         
-        // to generate randomly the seed to produce the differential cross section
-        // Random &random = Random::instance();
-        // int seedDiffXS = random.randInt();
         // not affecting the results
         int seedDiffXS = 1;
         
@@ -154,26 +150,29 @@ class NeutrinoAntineutrinoSecondariesDistribution {
         
         std::string partonicPath = "/Applications/CRPropa/NuPropaLap/PartonicCalculation/sigmaNu_interface/"; // to change with NUPROPA path
         std::string interfacePath = partonicPath + "bin/";
-
-        std::ostringstream cmd;
-        cmd << interfacePath << "Main_Interface.exe"
-            << " -c " << idChannel
-            << " -s " << seedDiffXS
-            << " -E " << std::sqrt(s / GeV / GeV); // Ecms has to be given in GeV
         
-        int result = std::system(cmd.str().c_str());
-        if (result != 0) {
-            std::ostringstream oss;
-            oss << "Error: Failed to run Main_Interface.exe, with exit code: " << result;
-            throw std::runtime_error(oss.str());
-        }
-
         std::ostringstream ss;
-        ss << std::scientific << std::setprecision(5) << s / GeV / GeV;
-        std::string Ecms2 = ss.str();
+        ss << std::scientific << std::setprecision(5) << std::sqrt(s / GeV / GeV);
+        std::string Ecms = ss.str();
         
         std::string filePath = partonicPath + "dataDifferentialXS/channel" + std::to_string(idChannel) + "/";
-        std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) + "_EcmsSq" + Ecms2 + "_s" + std::to_string(seedDiffXS) + ".txt";
+        std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) +
+        "_Ecms" + Ecms + "_s" + std::to_string(seedDiffXS) + ".txt";
+        
+        if (!std::ifstream(filename)) {
+            std::ostringstream cmd;
+            cmd << interfacePath << "Main_Interface.exe"
+            << " -c " << idChannel
+            << " -s " << seedDiffXS
+            << " -E " << std::sqrt(s / GeV / GeV); // Ecms in GeV
+            
+            int result = std::system(cmd.str().c_str());
+            if (result != 0) {
+                std::ostringstream oss;
+                oss << "Error: Failed to run Main_Interface.exe, with exit code: " << result;
+                throw std::runtime_error(oss.str());
+            }
+        }
         
         std::vector<double> variableScan;
         std::vector<double> differentialXS;
@@ -185,11 +184,23 @@ class NeutrinoAntineutrinoSecondariesDistribution {
             oss << "Error: could not open the differentialXS file. The filename is: " << filename;
             throw std::runtime_error(oss.str());
         } else {
-            
+            std::string line;
             double a, b;
-            while (infile >> a >> b) {
-                variableScan.push_back(a);
-                differentialXS.push_back(b);
+            
+            while (std::getline(infile, line)) {
+                // skip empty lines or lines starting with '#'
+                if (line.empty() || line[0] == '#') continue;
+                
+                std::istringstream iss(line);
+                if (iss >> a >> b) {
+                    variableScan.push_back(a);
+                    differentialXS.push_back(b);
+                } else {
+                    // if parsing failed on a non-comment line, optionally throw or skip
+                    std::ostringstream oss;
+                    oss << "Error: could not parse line: \"" << line << "\" in file " << filename;
+                    throw std::runtime_error(oss.str());
+                }
             }
             infile.close();
         }
@@ -215,8 +226,12 @@ class NeutrinoAntineutrinoSecondariesDistribution {
 
 void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate, double mass, int IDbkg) const {
     
+    std::cout << "Im in perform interaction: " << std::endl;
+    
     double E = candidate->current.getEnergy();
     int ID = candidate->current.getId();
+    
+    std::cout << "Energy (GeV): " << E / GeV << std::endl;
     
     candidate->setActive(false);
     
@@ -224,6 +239,8 @@ void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate, d
         return;
     
     int indexChannel = this->channelsBundle->getSelectedIndex();
+    
+    std::cout << "indexChannel: " << indexChannel << std::endl;
     
     std::vector<double> tabE = this->channelsBundle->selectE();
     std::vector<double> tabs = this->channelsBundle->selects();
@@ -234,10 +251,27 @@ void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate, d
     if (E < tabE.front() or (E > tabE.back()))
         return;
     
-    // solve the problem for elastic scattering, in this case I should take ID & IDbkg
     int prodId1 = prodChanId[0];
     int prodId2 = prodChanId[1];
     int chanId = prodChanId[2];
+    
+    // for the neutrino antineutrino Z resonance into nu nux of another flavor
+    Random &random = Random::instance();
+    if (chanId == 9) {
+        if (std::abs(ID) == 12) {
+            int Id = (random.rand() < 0.5) ? 14 : 16;
+            int prodId1 = Id;
+            int prodId2 = -Id;
+        } else if (std::abs(ID) == 14) {
+            int Id = (random.rand() < 0.5) ? 12 : 16;
+            int prodId1 = Id;
+            int prodId2 = -Id;
+        } else { // abs(ID) = 16
+            int Id = (random.rand() < 0.5) ? 14 : 12;
+            int prodId1 = Id;
+            int prodId2 = -Id;
+        }
+    }
     
     double m3;
     double m4;
@@ -247,40 +281,40 @@ void NeutrinoAntineutrinoInteraction::performInteraction(Candidate *candidate, d
         prodId1 = prodId1 + ID;
         prodId2 = prodId2 + IDbkg;
         
-        m3 = mass;
-        m4 = this->neutrinoFieldMass;
+        m3 = mass / c_squared; // it is given in J
+        m4 = this->neutrinoFieldMass / c_squared; // it is given in J
         
     } else {
         
         ParticleData particle;
-        m3 = particle.getParticleMass(prodId1); // in kg
-        m4 = particle.getParticleMass(prodId2); // in kg
+        m3 = particle.getParticleMass(std::abs(prodId1)); // in kg
+        m4 = particle.getParticleMass(std::abs(prodId2)); // in kg
         
     }
     
     double sThr = (m3 * m3 + m4 * m4) * c_squared * c_squared;
     
     // sample the value of s
-    Random &random = Random::instance();
     size_t i = closestIndex(E, tabE);  // find closest tabulation point
     size_t j = random.randBin(tabCDF[i]);
     double lo = std::max(sThr, tabs[j-1]); // first s-tabulation point below min(s_kin);
     double hi = tabs[j];
-    double s = lo + random.rand() * (hi - lo); // should I add the neutrino masses? since it is the s_kin!!
+    double s = lo + random.rand() * (hi - lo);
     
     // sample the cosine of theta13_com
-    std::string variable = "costh13_com";
+    std::string variable = "dsigdcosth";
     static NeutrinoAntineutrinoSecondariesDistribution distribution(variable, chanId, sThr);
     double costh13_com = distribution.sample(s);
-
+    
     setRelativisticInteraction(mass, this->neutrinoFieldMass, E, s); // to treat for the case one or both massless
     
     // energies of the secondary particles
     std::vector<double> energies = this->relInteraction->getProductEnergiesLab(s, costh13_com, m3, m4);
-    
+    std::cout << "I'm in perform  interaction, the first product energy is in GeV: " << energies[0] / GeV << std::endl;
+    std::cout << "I'm in perform  interaction, the second product energy is in GeV: " << energies[1] / GeV << std::endl;
     Vector3d pos = random.randomInterpolatedPosition(candidate->previous.getPosition(), candidate->current.getPosition());
     
-    // add the thinning!
+    // thinning not implemented!
     double w = 1.;
     
     candidate->addSecondary(prodId1, energies[0], pos, w, this->interactionTag);
@@ -298,13 +332,16 @@ void NeutrinoAntineutrinoInteraction::process(Candidate *candidate) const {
     if (!(abs(ID) == 12 || abs(ID) == 14 || abs(ID) == 16))
         return;
 
-    int IDbkg = this->neutrinoMixing->fromMassToFlavour(this->neutrinoFieldMass / eV);
-    
+    Random &random = Random::instance();
+    int sign = (random.rand() < 0.5) ? -1 : +1;
+    int IDbkg = sign * this->neutrinoMixing->fromMassToFlavour(this->neutrinoFieldMass / eV);
+   
     if (ID * IDbkg > 0)
         return;
-    
+ 
     double mass = this->neutrinoMixing->fromFlavourToMass(ID) * eV; // returned in eV from the function
     int indexMass = this->neutrinoMixing->massToIndexMass(mass / eV) + 1;
+    
     std::string massComb = this->neutrinoField->getFieldName() + "_m" + std::to_string(indexMass);
     
     double rate = this->channelsBundle->getRate(ID, IDbkg, massComb, z, E);
@@ -313,7 +350,6 @@ void NeutrinoAntineutrinoInteraction::process(Candidate *candidate) const {
         return;
     
     // check for interaction
-    Random &random = Random::instance();
     double randDistance = -log(random.rand()) / rate;
     double step = candidate->getCurrentStep();
     if (step < randDistance) {

@@ -36,6 +36,8 @@ public:
  
     ChannelsBundle(ref_ptr<Channels> channels, std::string fname);
     
+    bool intToBool(int active);
+    
     void loadRateFile(const std::string& filename);
     void loadCumulativeRateFile(const std::string& filename);
     void loadProductsChannelId(const std::string& filename);
@@ -52,6 +54,7 @@ public:
     
     std::vector<double> fillTableZeros(std::vector<double> table, size_t size);
     void computeInteractionProbabilities(std::vector<std::vector<double>> rates);
+    void checkProbabilityConsistency(std::vector<std::vector<double>> probabilityMatrix, int cols, int rows);
     void selectIndex(std::vector<double> tabEnergy, double E);
     
     std::vector<std::vector<double>> selectCDF();

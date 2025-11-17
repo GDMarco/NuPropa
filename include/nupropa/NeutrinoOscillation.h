@@ -31,7 +31,8 @@ public:
     
     void setNeutrinoMixing(ref_ptr<NeutrinoMixing> neutrinoMixing);
     
-    void process(crpropa::Candidate *candidate) const;
+    void evolve(Candidate *candidate, int ID, double E, double distance) const;
+    void process(Candidate *candidate) const;
     
 };
 

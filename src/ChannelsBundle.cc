@@ -23,7 +23,7 @@ ChannelsBundle::ChannelsBundle(ref_ptr<Channels> channels, std::string fname) {
     std::string path = channels->getInteractionFolderPath();
     std::vector<std::vector<int>> products = channels->getProductsID();
     std::vector<std::string> interactionChannel = channels->getInteractionChannels();
-    std::vector<bool> activeChannels = channels->getActiveChannels();
+    std::vector<int> activeChannels = channels->getActiveChannels();
     
     std::unordered_map<int, std::pair<std::string, std::string >> ratesDict;
     int index = 0;
@@ -31,14 +31,13 @@ ChannelsBundle::ChannelsBundle(ref_ptr<Channels> channels, std::string fname) {
     std::vector<std::string> masses = {"m1", "m2", "m3"};
     std::vector<double> redshifts = {0, 2, 5, 8, 11, 15, 20, 25, 30, 40, 50};
     
-    for (int i = 0; i <= interactionChannel.size(); ++i) {
-        
-        if (!activeChannels[i]) {
-            
+    for (int i = 0; i < interactionChannel.size(); ++i) {
+        bool activateBool = intToBool(activeChannels[i]);
+        if (!activateBool) {
             continue;
             
         } else {
-            
+        
             for (const auto& a : masses) {
                 for (const auto& z : redshifts) {
                     
@@ -53,8 +52,7 @@ ChannelsBundle::ChannelsBundle(ref_ptr<Channels> channels, std::string fname) {
                     
                     std::string filenameCDF = pathInt + "/cdf_" + fname + "_" + a + "_z" + zDec + ".txt";
                     loadCumulativeRateFile(filenameCDF);
-                    
-                    // this is the same for each alphaBeta actually, so a way to not be redundant?
+                
                     std::string filenameProdChan = pathInt + "/products_channelId.txt"; // 2 to 2 processes, so (1 row, 3 col)
                     loadProductsChannelId(filenameProdChan);
                     
@@ -64,10 +62,18 @@ ChannelsBundle::ChannelsBundle(ref_ptr<Channels> channels, std::string fname) {
                 }
             }
         }
+        
         this->ratesDictionary = ratesDict;
+
     }
 }
 
+
+bool ChannelsBundle::intToBool(int active) {
+    if (active == 0) return false;
+    if (active == 1) return true;
+    throw std::invalid_argument("Invalid activate integer for boolean: " + std::to_string(active));
+}
 
 void ChannelsBundle::loadRateFile(const std::string& filename) {
     
@@ -91,6 +97,7 @@ void ChannelsBundle::loadRateFile(const std::string& filename) {
         infile.ignore(std::numeric_limits < std::streamsize > ::max(), '\n');
     }
     infile.close();
+    
     
     this->tabEnergy.push_back(vecEnergy);
     this->tabRate.push_back(vecRate);
@@ -161,26 +168,34 @@ void ChannelsBundle::loadProductsChannelId(const std::string& filename) {
         infile.ignore(std::numeric_limits < std::streamsize > ::max(), '\n');
     }
     infile.close();
-    
-    this->tabProdChanId.push_back(Ids);
+    if (Ids.size() == 3) {
+        this->tabProdChanId.push_back(Ids);
+    } else {
+        throw std::runtime_error("The product file: " + filename + " has a size: " + std::to_string(Ids.size()));
+    }
 }
 
 std::vector<std::string> ChannelsBundle::getAlphasBetas(int ID, int IDbkg) {
     
     std::vector<std::string> alphasBetas;
     
-    if (abs(ID) == abs(IDbkg)) {        // case alpha = beta
+    if (abs(ID) == abs(IDbkg)) {   // case alpha = beta
         
         std::string interacting = "NeutrinoAntineutrino";
         
-        for (const auto& [key, val] : this->ratesDictionary) {
+        // for cycle over the all the elements of the dictionary,
+        // i.e. with index, AlphaBetas and mass/redshift properties
+        // maybe I should do it once at the beginning?
+        // sum up all the rates
+        for (const auto& entry : ratesDictionary) {
             
-            // std::cout << "val.first: " << val.first << '\n';
-            std::string interactionChannel = val.first;
+            int key = entry.first;
+            auto& value = entry.second;
             
+            std::string interactionChannel = value.first;
+
             if (interactionChannel.find(interacting) == 0) {
                 
-                // NeutrinoAntineutrinoElastic
                 std::string elastic = interacting + "Elastic";
                 if (interactionChannel == elastic)
                     alphasBetas.push_back(elastic);
@@ -204,10 +219,10 @@ std::vector<std::string> ChannelsBundle::getAlphasBetas(int ID, int IDbkg) {
                         alphasBetas.push_back(leptonic);
                     
                 } else {
-                    
-                    alphasBetas.push_back(interactionChannel); // all the other resonances in nu_alpha + nux_alpha
-                    
+                    continue;
                 }
+                
+                alphasBetas.push_back(interactionChannel); // all the other resonances in nu_alpha + nux_alpha
             }
         }
         
@@ -215,8 +230,7 @@ std::vector<std::string> ChannelsBundle::getAlphasBetas(int ID, int IDbkg) {
         
         std::string interacting = "NeutrinoiAntineutrinoj";
         for (const auto& [key, val] : ratesDictionary) {
-            
-            // std::cout << "val.first: " << val.first << '\n';
+
             std::string interactionChannel = val.first;
             
             if (interactionChannel.find(interacting) == 0) {
@@ -269,20 +283,17 @@ std::vector<std::string> ChannelsBundle::getAlphasBetas(int ID, int IDbkg) {
                         alphasBetas.push_back(leptonic);
                     
                 } else {
-                    continue; // maybe not needed
-                    // /Applications/CRPropa/NuPropaLap/src/ChannelsBundle.cc:279:1: warning: non-void function does not return a value [-Wreturn-type]
-                    // 279 | }
-                    //    | ^
-                    // 1 warning generated.
+                    continue;
                 }
                 
             }
         }
     }
-
+    return alphasBetas;
 }
 
 std::vector<double> ChannelsBundle::fillTableZeros(std::vector<double> table, size_t size) {
+    
     if (table.size() < size) {
         double difference = size - table.size();
         table.insert(table.begin(), difference, 0);
@@ -292,6 +303,7 @@ std::vector<double> ChannelsBundle::fillTableZeros(std::vector<double> table, si
     } else {
         throw std::runtime_error("Too large table size: suspicious!");
     }
+    
 }
 
 void ChannelsBundle::computeInteractionProbabilities(std::vector<std::vector<double>> rates) {
@@ -301,35 +313,67 @@ void ChannelsBundle::computeInteractionProbabilities(std::vector<std::vector<dou
     size_t cols = rates[0].size();
     size_t rows = rates.size();
     
-    for (size_t i; i <= cols; ++i) {
+    this->channelProbability = std::vector<std::vector<double>>(rows, std::vector<double>(cols, 0.0));
+    
+    for (size_t i = 0; i < cols; ++i) {
         double sum = 0;
-        for (size_t j; j <= rows; ++j) {
-            sum = sum + this->tabRate[j][i];
+        for (size_t j = 0; j < rows; ++j) {
+            sum = sum + rates[j][i];
         }
         
-        std::vector<double> vecProb;
-        
-        for (size_t j; j <= rows; ++j) {
-            vecProb.push_back(this->tabRate[j][i] / sum);
+        for (size_t j = 0; j < rows; ++j) {
+            // check if the sum is <= 1
+            if (sum == 0){
+                this->channelProbability[j][i] = 0;
+            } else {
+                this->channelProbability[j][i] = rates[j][i] / sum;
+            }
         }
-        
-        this->channelProbability.push_back(vecProb);
-        // to check if it's work, and to sync with interaction dictionary!
+       
     }
+    
+    checkProbabilityConsistency(this->channelProbability, cols, rows);
     // in the file it should read I need both the products and the interactive particles, to
     //return this->channelProbabilities();
+    // each bin corresponds to an energy!
     // tabProbabilities // channels (index) vs pbin1 - pbin1 - pbin2
                         // 1                    0.1
                         // 2                    0.8
                         // 3                    0.1
 }
 
+void ChannelsBundle::checkProbabilityConsistency(std::vector<std::vector<double>> probabilityMatrix, int cols, int rows) {
+    
+    double tol = 1e-10;
+    for (size_t c = 0; c < cols; ++c) {
+        double sum = 0;
+        std::vector<double> vec;
+        for (size_t r = 0; r < rows; ++r) {
+            vec.push_back(probabilityMatrix[r][c]);
+            sum += probabilityMatrix[r][c];
+        }
+        
+        bool notAllZeros = false;
+        for (double v : vec) {
+            if (v > 0) {
+                notAllZeros = true; // found a non-zero element
+                break;
+            }
+        }
+        
+        if (std::abs(sum - 1.0) > tol and notAllZeros) {
+            throw std::runtime_error("The column " + std::to_string(c) + " of the probability matrix is not following the probability theorem with a precision of: " + std::to_string(tol));
+        } else {
+            continue;
+        }
+    }
+}
+
 void ChannelsBundle::selectIndex(std::vector<double> tabEnergy, double E) {
     
-    // take the index i of the closest tabEnergy[i] to E
     double distEnergy = 1e6; // to minimize this value
     int iEnergy = -1;
-    for (int i; i <= tabEnergy.size(); ++i) {
+    for (size_t i = 0; i < tabEnergy.size(); ++i) {
         double dist = abs(E - tabEnergy[i]);
         if (dist < distEnergy) {
             distEnergy = dist;
@@ -346,10 +390,10 @@ void ChannelsBundle::selectIndex(std::vector<double> tabEnergy, double E) {
     
     double tabCDFLow = 0;
     double tabCDFUpp = 0;
-    int selChannel;
+    int selChannel = -1;
     
     // build a "cumulative function" and select the channel
-    for (int i = 0; i <= channelProbability.size() - 1; ++i) {
+    for (int i = 0; i < channelProbability.size() - 1; ++i) {
         tabCDFLow = tabCDFLow + channelProbability[i];
         tabCDFUpp = tabCDFUpp + channelProbability[i + 1];
         if ((tabCDFLow < iRand) && (iRand <= tabCDFUpp)) {
@@ -359,9 +403,7 @@ void ChannelsBundle::selectIndex(std::vector<double> tabEnergy, double E) {
     }
 
     this->selectedIndex = selChannel;
-    // to take into account parity invariance of the processes... !
-    // for the elastic scatterings there are initialising values!
-    
+ 
 }
 
 double ChannelsBundle::findClosestRedshift(double z, const std::vector<double> &redshifts) const {
@@ -375,19 +417,20 @@ double ChannelsBundle::findClosestRedshift(double z, const std::vector<double> &
     double lower = *(it - 1);
 
     return (std::abs(upper - z) < std::abs(lower - z)) ? upper : lower;
-    
 }
 
 void ChannelsBundle::selectIndexes(std::string massCombRedshift, int ID, int IDbkg) {
-    
+   
     // at each step should be updated
     this->selectedIndexes.clear();
     
     std::vector<std::string> alphasBetas = getAlphasBetas(ID, IDbkg);
     std::vector<int> indexes;
-
-    for (const auto& [key, val] : ratesDictionary) {
+    
+    for (const auto& [key, val] : this->ratesDictionary) {
+        //std::cout << "in ChannelBundle, in selectIndexs, in for cycle" << std::endl;
         if (std::find(alphasBetas.begin(), alphasBetas.end(), val.first) != alphasBetas.end() && val.second == massCombRedshift) {
+            //std::cout << "in ChannelBundle, in selectIndexs for cycle: key: " << key << std::endl;
             indexes.push_back(key);
         }
     }
@@ -398,7 +441,7 @@ void ChannelsBundle::selectIndexes(std::string massCombRedshift, int ID, int IDb
 std::vector<std::vector<double>> ChannelsBundle::selectedRates(const std::vector<int>& indexes) {
     
     std::vector<std::vector<double>> rates;
-
+    
     for (int idx : indexes) {
         if (idx >= 0 && idx < this->tabRate.size()) {
             rates.push_back(this->tabRate[idx]);
@@ -421,7 +464,6 @@ std::vector<std::vector<double>> ChannelsBundle::selectedEnergies(const std::vec
     return energies;
 }
 
-// To optimise the following functions!
 std::vector<std::vector<double>> ChannelsBundle::selectCDF() {
     
     std::vector<std::vector<std::vector<double>>> cdfs;
@@ -434,7 +476,6 @@ std::vector<std::vector<double>> ChannelsBundle::selectCDF() {
     
     std::vector<std::vector<double>> cdf = cdfs[this->selectedIndex];
     return cdf;
-    
 }
 
 std::vector<double> ChannelsBundle::selects() {
@@ -449,7 +490,6 @@ std::vector<double> ChannelsBundle::selects() {
     
     std::vector<double> s = ss[this->selectedIndex];
     return s;
-    
 }
 
 std::vector<double> ChannelsBundle::selectE() {
@@ -484,15 +524,14 @@ std::vector<int> ChannelsBundle::selectProdChanId() {
 
 double ChannelsBundle::getRate(int ID, int IDbkg, std::string massComb, double z, double E) {
     
-    std::vector<double> redshifts = {0, 2, 5, 8, 11, 15, 20, 25, 30, 40, 50}; // same as computed in NuPropa-data
+    std::vector<double> redshifts = {0, 2, 5, 8, 11, 15, 20, 25, 30, 40, 50}; // same as computed in NuPropa-data, to update in case I add more tables
     double zClosest = findClosestRedshift(z, redshifts);
+    
     std::ostringstream out;
     out << std::fixed << std::setprecision(1) << zClosest;
     std::string zDec = out.str();
     
     std::string redshift = "_z" + zDec;
-    
-    // look for the indexes compatible with massComb + redshift & alphaBeta
     selectIndexes(massComb + redshift, ID, IDbkg);
     
     std::vector<std::vector<double>> rates = selectedRates(this->selectedIndexes);
@@ -501,38 +540,35 @@ double ChannelsBundle::getRate(int ID, int IDbkg, std::string massComb, double z
     this->channelProbability.clear();
     
     if (energies.size() == 0) {
-    
-        throw std::runtime_error("No active channels for Neutrino-Antineutrino interaction!");
+        return -1;
+        //throw std::runtime_error("No active channels for Neutrino-Antineutrino interaction!");
     
     } else if (energies.size() == 1) { // i.e. indexes has only one element
-        
+
         std::vector<double> ones(energies.size(), 1);
-        // redundant?
         this->channelProbability.push_back(ones);
         
         if (E < energies[0].front() or (E > energies[0].back()))
             return -1;
         
-        // interaction rate
         double rate = interpolate(E, energies[0], rates[0]);
         return rate;
         
     } else {
         
-        size_t maximumTableSize = -1;
-        int maximumIndex = -1;
+        size_t maximumTableSize = 0;
+        int maximumIndex;
         for (size_t j = 0; j < energies.size(); ++j) {
-            size_t tableSize = rates[j].size();
+            size_t tableSize = energies[j].size();
             if (tableSize > maximumTableSize) {
                 maximumTableSize = tableSize;
                 maximumIndex = j;
             }
         }
-        
         std::vector<double> totalRate(maximumTableSize, 0);
         std::vector<std::vector<double>> resizedRates;
-        
-        for (size_t j; j < rates.size(); ++j) {
+    
+        for (size_t j = 0; j < rates.size(); ++j) {
             std::vector<double> resizedRate = fillTableZeros(rates[j], maximumTableSize);
             resizedRates.push_back(resizedRate);
             

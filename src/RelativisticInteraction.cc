@@ -15,6 +15,7 @@ using namespace crpropa;
 RelativisticInteraction::RelativisticInteraction() {};
 
 RelativisticInteraction::RelativisticInteraction(double m1, double m2, double E, double s) {
+    std::cout << "inside relativistic interaction" << std::endl;
     setBetaCom(E, m1, m2, s);
     setGammaCom(E, s);
 };
@@ -29,7 +30,6 @@ void RelativisticInteraction::setBetaCom(double E, double m1, double m2, double 
     Random &random = Random::instance();
     double costh = random.randUniform(-1, 1); // generate a random number between [-1, 1]
         // it is problematic at the boundaries costh * costh == 1
-        // I should take it from the random generation in process!
     
     double K = s - m1 * m1 * c_squared * c_squared - m2 * m2 * c_squared * c_squared;
     double Y = K * K / 4 + m2 * m2 * c_squared * c_squared * E * E * costh * costh;
@@ -37,8 +37,8 @@ void RelativisticInteraction::setBetaCom(double E, double m1, double m2, double 
     double e = K * E + sqrt(4 * E * E * (1 - costh * costh) * Y) / 4 / E / E / (1 - costh * costh);
     
     double beta = (sqrt(E * E - m1 * m1 * c_squared * c_squared) + sqrt(e * e - m2 * m2 * c_squared * c_squared) * costh) / (E + e);
+    // relativistic check eps >= m2 * c_squared
     
-    // check eps >= m2 * c_squared
     this->eps = e;
     this->beta_com = beta;
     
@@ -47,7 +47,6 @@ void RelativisticInteraction::setBetaCom(double E, double m1, double m2, double 
 void RelativisticInteraction::setBetaPhotonCom(double E, double m1, double s) {
     Random &random = Random::instance();
     double costh = random.randUniform(-1, 1); // generate a random number between [-1, 1]
-    // it should be taken from process!
     
     double e = (s - m1 * m1 * c_squared * c_squared) / 2 / E / (1 - costh);
     
