@@ -132,6 +132,8 @@ double NeutrinoMixing::fromFlavourToMass(int ID) {
 
 int NeutrinoMixing::fromMassToFlavour(double mass) {
     
+    int massIndex = massToIndexMass(mass);
+    
     if (massIndex < 0)
         return -1;
 

@@ -155,9 +155,28 @@ class NeutrinoAntineutrinoSecondariesDistribution {
         ss << std::scientific << std::setprecision(5) << std::sqrt(s / GeV / GeV);
         std::string Ecms = ss.str();
         
+        double Ecms_val = std::sqrt(s / GeV / GeV);
+        
+        if (std::isnan(Ecms_val) || !std::isfinite(Ecms_val)) { // to format in CRPropa style!
+                std::ostringstream err;
+                err << "\n[FATAL] Ecms is NaN or infinite\n"
+                    << "--------------------------------\n"
+                    << "s               = " << s << "\n"
+                    << "GeV             = " << GeV << "\n"
+                    << "idChannel       = " << idChannel << "\n"
+                    << "variable        = " << variable << "\n"
+                    << "variableValue   = " << variableValue << "\n"
+                    << "seedDiffXS      = " << seedDiffXS << "\n"
+                    << "s/(GeV*GeV)     = " << s/(GeV*GeV) << "\n";
+
+                throw std::runtime_error(err.str());
+        }
+        
         std::string filePath = partonicPath + "dataDifferentialXS/channel" + std::to_string(idChannel) + "/";
         std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) +
         "_Ecms" + Ecms + "_s" + std::to_string(seedDiffXS) + ".txt";
+        
+        
         
         if (!std::ifstream(filename)) {
             std::ostringstream cmd;
