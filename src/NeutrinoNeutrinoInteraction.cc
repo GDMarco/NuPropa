@@ -269,6 +269,23 @@ class NeutrinoNeutrinoSecondariesDistribution {
         ss << std::scientific << std::setprecision(5) << std::sqrt(s / GeV / GeV);
         std::string Ecms = ss.str();
         
+        double Ecms_val = std::sqrt(s / GeV / GeV);
+        
+        if (std::isnan(Ecms_val) || !std::isfinite(Ecms_val)) { // to format in CRPropa style!
+                std::ostringstream err;
+                err << "\n[FATAL] Ecms is NaN or infinite\n"
+                    << "--------------------------------\n"
+                    << "s               = " << s << "\n"
+                    << "GeV             = " << GeV << "\n"
+                    << "idChannel       = " << idChannel << "\n"
+                    << "variable        = " << variable << "\n"
+                    << "variableValue   = " << variableValue << "\n"
+                    << "seedDiffXS      = " << seedDiffXS << "\n"
+                    << "s/(GeV*GeV)     = " << s/(GeV*GeV) << "\n";
+
+                throw std::runtime_error(err.str());
+        }
+        
         std::string filePath = partonicPath + "dataDifferentialXS/channel" + std::to_string(idChannel) + "/";
         std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) +
         "_Ecms" + Ecms + "_s" + std::to_string(seedDiffXS) + ".txt";
@@ -340,8 +357,6 @@ class NeutrinoNeutrinoSecondariesDistribution {
 
 void NeutrinoNeutrinoInteraction::performInteraction(Candidate *candidate, int index, double mass) const {
     
-    std::cout << "Inside performInteraction" << std::endl;
-    
     double E = candidate->current.getEnergy();
     double ID = candidate->current.getId();
     double w = 1; // no thinning, TBD
@@ -384,16 +399,12 @@ void NeutrinoNeutrinoInteraction::performInteraction(Candidate *candidate, int i
     std::string variable = "dsigdcosth";
     static NeutrinoNeutrinoSecondariesDistribution distribution(variable, idInteraction, mass, this->neutrinoFieldMass);
     double costh13_com = distribution.sample(s);
-    std::cout << "costh13_com: " << costh13_com << std::endl;
     
     // see if this function wants the neutrino masses in J or kg!
     setRelativisticInteraction(mass / c_squared, this->neutrinoFieldMass / c_squared, E, s);
     
     // energies of the secondary particles
     std::vector<double> energies = this->relInteraction->getProductEnergiesLab(s, costh13_com, mass / c_squared, this->neutrinoFieldMass / c_squared);
-    
-    std::cout << "Energy0 (EeV)" << energies[0] / EeV << std::endl;
-    std::cout << "Energy1 (EeV)" << energies[1] / EeV << std::endl;
     
     Vector3d pos = random.randomInterpolatedPosition(candidate->previous.getPosition(), candidate->current.getPosition());
     
