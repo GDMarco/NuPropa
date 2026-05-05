@@ -1,0 +1,175 @@
+%! TEX program = pdflatex
+\documentclass[a4paper,11pt]{article}
+
+% Local packages
+\usepackage{setup}
+\usepackage{jheppub}
+
+% TeXLive packages
+%\usepackage{cite}
+\usepackage{ifthen}
+\usepackage{subcaption}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{appendix}
+
+% Bibliography
+\bibliographystyle{JHEP}
+
+% SI unit femtobarn
+\DeclareSIUnit\fb{\femto\barn}
+
+%% A few custom commands copied over from previous documents                     
+\def \beq{\begin{equation}}
+\def \eeq{\end{equation}}
+\def \beqa{\begin{eqnarray}}
+\def \eeqa{\end{eqnarray}}
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+
+\def\nn{\nonumber }
+\def\msbar{$\overline{\hbox{MS}}$}
+\newcommand{\alert}[1]{{\bf \color{red}[{#1}]}} 
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+
+\def\gsim{\mathrel{\rlap{\lower4pt\hbox{\hskip1pt$\sim$}}
+    \raise1pt\hbox{$>$}}}         %greater than or approx. symbol
+\def\lsim{\mathrel{\rlap{\lower4pt\hbox{\hskip1pt$\sim$}}
+    \raise1pt\hbox{$<$}}}         %less than or approx. symbol
+
+
+\begin{document}
+\title{Notes for neutrino-neutrino and neutrino-photon interactions.}
+
+\author[1]{Rhorry}
+\affiliation[1]{Max Planck Institute for Physics, Boltzmannstr. 8, 85748 Garching, Germany}
+\emailAdd{rgauld@mpp.mpg.de}
+
+\date{\today}
+%\pacs{}
+
+\abstract{A summary of the calculation for neutrino-X interactions (to be modified/injected into paper) as required.}
+
+\maketitle
+\flushbottom
+
+\section{Calculation}
+
+
+\paragraph{General intro/motivation of the calculations}
+
+Ultra-high-energy neutrinos that propagate our Universe propagate almost freely.
+However, due to the presence of the cosmic microwave background (CMB) and the cosmic neutrino background (CNB), a reliable description of neutrino propagation should take into account the possibility of neutrino-CMB and neutrino-CNB interactions.
+Such interactions can lead to energy degradation of the incident neutrino, the production/re-generation of additional neutrinos, or can lead to annihilation of the incident neutrino.
+Accounting for all such effects is necessary for a reliable description of neutrino propagation over large distances where the interaction probability (mean free path) is not negligible.
+
+Our approach for the description of neutrino propagation makes use of a Monte Carlo approach, and is presented as a plug-in to the existing CRPropa code which provides a Monte Carlo simulation of cosmic-ray propagation throughout the Universe.
+The development of this plug-in requires an interaction model for neutrino interactions with both the CMB and CNB, which provides a fast description of both inclusive and differential scattering rates for neutrino collisions with either neutrino or photon targets.
+In the following, we provide details of the interaction model which has been implemented within the $\nu$Propa plug-in.
+
+When considering a background target $X$ (either a neutrino or photon), the differential scattering rate takes the generic form 
+%
+\begin{align} \label{eq:dsigma}
+{\rm d} \sigma_{\nu X} = \frac{\overline{\sum} |\mathcal{A}|^2 }{2 F} \, {\rm d}\phi_n\,,
+\end{align}
+%
+where the averaged and summed/squared amplitude is represented by $\overline{\sum} |\mathcal{A}|^2$, the flux factor is $F$, and ${\rm d}\phi_n$ represents the differential phase-space factor for outgoing particles.
+%
+We will mainly be interested in the description of 2-to-2 scattering processes, for which the differential phase-space can be written as
+%
+\begin{align}
+ {\rm d}\phi_n\left( s_{12};p_1,p_2 \right) = \frac{{\rm d} \phi \, {\rm d}\cos \theta}{2(4\pi)^2}\lambda^{\frac{1}{2}}\left(1,\frac{m_1^2}{s_{12}},\frac{m_2^2}{s_{12}}\right) \,,
+\end{align}
+%
+The variable $\lambda$ is the K\"all\'en function which describes the impact of particle masses in the phase space, and the squared centre-of-mass energy of the massless particles is $s_{12} = 2 p_1 \cdot p_2$.
+%
+Working in a frame where the incoming particles are (anti)aligned in the $+z$ direction, the $\phi$ integration can be performed trivially, leaving a single differential variable---here we denote that variable with $\cos \theta$, defining the polar angle between the outgoing particle $p_1$ and the positive $z$ axis.
+This variable characterises the differential scattering rate, and the total cross-section (as a function of $s_{12}$) can be obtained by integrating over $\cos \theta$.
+%
+For the implementation within $\nu$Propa, it is useful to implement both the analytic formula for the differential cross-section as well as that for the total cross-section obtained after analytically integrating over $\cos \theta$.
+The latter provides a fast implementation that can be used to probabilistically sample across the various different possible interaction channels.
+%
+To achieve this implementation one must first enumerate the various scattering channels involving initial-state neutrino-neutrino and neutrino-photon collisions, and then obtain the analytic expressions for the squared amplitudes as well as the total cross-section.
+
+\paragraph{Example for neutrino-neutrino scattering at LO.} The leading-order (LO) corrections for the various neutrino-neutrino induced channels begin at $\mathcal{O}(\alpha^2)$ and can be straightforwardly calculated.
+Examples of some specific channels with unique results for the squared amplitude involving four neutrinos are $\nu_1 + \nu_2 \to  \nu_1 + \nu_2$, $\nu_1 + \nu_1 \to  \nu_1 + \nu_1$, and some examples of annihilation channels are $\nu_1 + \bar \nu_{1(2)} \to \ell_1 + \bar \ell_{1(2)}$ and $\nu_1 + \bar \nu_1 \to f + \bar f$.
+Example Feynman diagrams for some these channels are shown in Fig~\alert{XYZ}.
+%
+Here the subscripts indicate a flavour index, and it should be understood that the squared amplitude for all possible channels (e.g. involving anti-neutrinos) can be obtained from those for the listed processes by applying crossing-symmetry and including any relevant symmetry factors.
+%
+We have performed these calculations making use of the FormCalc package~\cite{Hahn:1998yk,Hahn:2016ebn}, where the results have been obtained for general fermion masses, and keeping track of complex terms appearing in the result.
+%
+The obtained expressions have also been directly compared to numerical results obtained with the package Recola2~\cite{Denner:2017wsf}, finding agreement to machine precision.
+%
+Furthermore, working in the $\alpha_{G_F}$ scheme and keeping only width effects in propagators, we found agreement with most of the results presented~\cite{Roulet:1992pz}. 
+An exception is the process $\nu + \bar \nu \to Z + Z$ which we will return to shortly.
+%
+As an example of how the calculation and implementation is performed, consider the process $\nu_1 + \nu_1 \to \nu_1 + \nu_1$. 
+The squared amplitude for this channel is
+%
+\begin{align}
+\sum |\mathcal{A}_{\nu_1 \nu_1\to \nu_1 \nu_1}|^2 = 
+\end{align}
+%
+Making use of Eq.~\eqref{eq:dsigma}, the total cross-section is
+\begin{align}
+\sigma_{\nu_1 \nu_1\to \nu_1 \nu_1}(s_{12}) &= \\
+								&\approx
+\end{align}
+%
+In the second line we have provided an approximation of the result valid for $s_{12} \gtrsim m_Z^2$ which is both reliable and numerically stable in such a limit.
+We have implemented both the exact results, as well as numerically stable approximations for the total-cross section for all considered channels.
+
+% Here comment on the NLO EW radiative correction
+As an example of the prediction for the differential scattering rate, in Fig.~[XYZ] we provide differential predictions for the $\nu_1 + \nu_1 \to \nu_1 + \nu_1$ scattering rate.
+%
+In addition to the LO result, we also show the impact of including exact NLO EW corrections in this channel. 
+The NLO EW corrections in this channel arise from virtual corrections and are finite after UV renormalisation (i.e. the require not treatment of soft or collinear emissions), and are thus readily available via public tools such as Recola2~\cite{Denner:2017wsf}.
+%
+The impact of these corrections amount to $X(Y)\%$ for centre-of-mass energies of A(B)~\GeV.
+These corrections are small, and indicate that the $\alpha_{G_F}$ input scheme is appropriate. 
+Given the smallness of the corrections, we did not include them as part of the $\nu$Propa plug-in, but we found interesting to investigate their impact (to our knowledge, the NLO EW corrections for neutrino-neutrino scattering were not considered before).
+
+\paragraph{Trident production and treatment of massive gauge boson production.}
+Starting at $\mathcal{O}(\alpha^3)$, contributions in the $\nu + \gamma$ channel arise that involve the exchange of virtual $W$ and/or $Z$ bosons. 
+For example, the process $\nu_{\ell} + \gamma \to \ell + f + \bar f$. 
+These types of processes are typically referred to as neutrino trident production, and appear as a subprocesses in coherent scattering upon the coulomb field of nucleons and nuclei.
+Their impact in the context of the SM and BSM have been considered in~[].
+At high centre-of-mass energies, the numerically dominant contributions arising from the trident production process are due to resonant enhancements arising from $W$ boson exchange contributions.
+%
+These type of contributions can be approximated in the Narrow Width Approximation (NWA), by treating the $W$ boson as an on-shell particle.
+This simplifies the calculation and allows for a faster numerical evaluation of the (simpler) squared amplitude expression when differential information is required.
+
+To assess the impact of the on-shell approximation (which is implemented within the $\nu$Propa plug-in), we have performed the full $2\to3$ trident calculation with an independent code and used this to benchmark the validity of the approximation.
+%
+As a concrete example, we consider the cross-section for the process  $\nu + \gamma \to \mu f \bar f$ in both the full calculation and also in the on-shell approximation.
+The prediction for the full calculation is performed numerically, performing the four dimensional phase-space integral with the \textsc{CUBA} library~\cite{Hahn:2004fe} for multi-dimensional integration (specifically, we make use of the Vegas algorithm).
+%
+The results are shown for the total cross-section as a function of the centre-of-mass energy in XYZ.
+\alert{Discuss results of the below threshold, near threshold, and above threshold regimes.}
+While the impact on the cross-section prediction is clear, it is also informative to assess how the different modelling impacts the calculation of the mean free path.
+%
+Making use of the formula appearing in Eq.~XYZ, a comparison of the mean free path calculations for this channel are shown in Fig.~XYZ.
+%
+\alert{Some comment on the result/impact if at all relevant or not}
+
+\paragraph{Massive diboson production.}
+Following the logic of the previous discussion, it also possible to consider the impact of $\mathcal{O}(\alpha^4)$ that involve contribution from two resonantly enhanced massive gauge boson propagators.
+%
+This can be achieved by treating both $W$ and $Z$ bosons as on-shell particles, and include the contributions from the channels $\nu + \bar \nu \to Z + Z$ and $\nu + \bar \nu \to W + W$.
+The decay of these gauge bosons (which can generate secondary neutrinos) is treated isotropically in the NWA.
+%
+We found agreement with the results of~\cite{Roulet:1992pz} for the $\nu + \bar \nu \to W + W$ but not for the $\nu + \bar \nu \to Z + Z$ process.
+We therefore quote the results we found for this channel below
+%
+\begin{align}
+\sigma_{\nu \bar \nu \to Z Z}(s_{12})  = 
+\end{align}
+%
+To validate this result we first performed a numerical check of the squared amplitude against that obtained with Recola2, and then performed both a numerical and analytic integration of phase-space.
+Our results were consistent in either case, but not in agreement the result in~\cite{Roulet:1992pz}.
+
+\bibliography{NeutrinoScattering}
+
+\end{document}
