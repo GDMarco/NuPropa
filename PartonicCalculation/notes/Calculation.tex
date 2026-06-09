@@ -109,20 +109,35 @@ As an example of how the calculation and implementation is performed, consider t
 The squared amplitude for this channel is
 %
 \begin{align}
-\sum |\mathcal{A}_{\nu_1 \nu_1\to \nu_1 \nu_1}|^2 = 
+\sum |\mathcal{A}_{\nu_1 \nu_1\to \nu_1 \nu_1}|^2 &= 
+64 \alpha_{G_F}^2 \pi^2 g_{L,\nu}^2 g_{L,\nu}^{*,2} f(\mu_z,s_{12},s_{13}) f(\mu_z^*,s_{12},s_{13}) \,,\\
+	f(\mu_z,s_{12},s_{13})  & = 
+\frac{s_{12} \left( 2 \mu_z + s_{12}  \right) }{  \left( \mu_z + s_{12} - s_{13}  \right)  \left( \mu_z +  s_{13}  \right)  }\,,\qquad \mu_Z = m_Z^2 - i \Gamma_Z m_Z\,.
 \end{align}
 %
-Making use of Eq.~\eqref{eq:dsigma}, the total cross-section is
+Note that for small values of the ratio $s_{12} / \mu_Z$ this interaction can be effectively described by a contact interaction and the angular dependence of the interaction is highly suppressed.
+%
+Note that here we define the strength of neutrino coupling via
+%
 \begin{align}
-\sigma_{\nu_1 \nu_1\to \nu_1 \nu_1}(s_{12}) &= \\
-								&\approx
+g_{L,\nu} &=  \frac{1}{2 c_W s_W}\,, \qquad 
+\alpha_{G_F} = \frac{\sqrt{2}}{\pi} G_{F} | \mu_W^2 s_W^2|\,,
+\qquad
+s_W^2 = 1 - \frac{\mu_W}{\mu_Z}\,.
 \end{align}
 %
-In the second line we have provided an approximation of the result valid for $s_{12} \gtrsim m_Z^2$ which is both reliable and numerically stable in such a limit.
+Making use of Eq.~\eqref{eq:dsigma}, and ignoring width effects, the total cross-section is
+\begin{align} \nonumber
+\sigma_{\nu_1 \nu_1\to \nu_1 \nu_1}(s_{12}) &= \frac{G_F^2}{2\pi} m_Z^2 
+	\left(  \frac{s_{12}}{ s_{12} + m_Z^2} + \frac{ 2 m_Z^2 }{ 2 m_Z^2 + s_{12} } \ln\left[ 1 + \frac{ s_{12} }{ m_Z^2} \right] \right) \\
+								&\approx \frac{G_F^2}{2\pi} \left(2 s_{12} - 2 \frac{s_{12}^2}{m_Z^2} \right)\,.
+\end{align}
+%
+In the second line we have provided a stable a approximation of the result valid for $s_{12} \gg m_Z^2$.
 We have implemented both the exact results, as well as numerically stable approximations for the total-cross section for all considered channels.
 
 % Here comment on the NLO EW radiative correction
-As an example of the prediction for the differential scattering rate, in Fig.~[XYZ] we provide differential predictions for the $\nu_1 + \nu_1 \to \nu_1 + \nu_1$ scattering rate.
+As an example of the prediction for the differential scattering rate, in Fig.~[XYZ] we provide differential predictions for the $\nu_\mu + \nu_\mu \to \nu_\mu + \nu_\mu$ scattering rate at the following centre-of-mass energies $\sqrt{s_{12}} = 1, 10^2, 10^3,10^6~\GeV$. 
 %
 In addition to the LO result, we also show the impact of including exact NLO EW corrections in this channel. 
 The NLO EW corrections in this channel arise from virtual corrections and are finite after UV renormalisation (i.e. the require not treatment of soft or collinear emissions), and are thus readily available via public tools such as Recola2~\cite{Denner:2017wsf}.
@@ -130,6 +145,8 @@ The NLO EW corrections in this channel arise from virtual corrections and are fi
 The impact of these corrections amount to $X(Y)\%$ for centre-of-mass energies of A(B)~\GeV.
 These corrections are small, and indicate that the $\alpha_{G_F}$ input scheme is appropriate. 
 Given the smallness of the corrections, we did not include them as part of the $\nu$Propa plug-in, but we found interesting to investigate their impact (to our knowledge, the NLO EW corrections for neutrino-neutrino scattering were not considered before).
+
+% FIGURE HERE
 
 \paragraph{Trident production and treatment of massive gauge boson production.}
 Starting at $\mathcal{O}(\alpha^3)$, contributions in the $\nu + \gamma$ channel arise that involve the exchange of virtual $W$ and/or $Z$ bosons. 
@@ -155,7 +172,7 @@ Making use of the formula appearing in Eq.~XYZ, a comparison of the mean free pa
 \alert{Some comment on the result/impact if at all relevant or not}
 
 \paragraph{Massive diboson production.}
-Following the logic of the previous discussion, it also possible to consider the impact of $\mathcal{O}(\alpha^4)$ that involve contribution from two resonantly enhanced massive gauge boson propagators.
+Following the logic of the previous discussion, it is also possible to consider the impact of $\mathcal{O}(\alpha^4)$ that involve contribution from two resonantly enhanced massive gauge boson propagators.
 %
 This can be achieved by treating both $W$ and $Z$ bosons as on-shell particles, and include the contributions from the channels $\nu + \bar \nu \to Z + Z$ and $\nu + \bar \nu \to W + W$.
 The decay of these gauge bosons (which can generate secondary neutrinos) is treated isotropically in the NWA.
@@ -163,8 +180,10 @@ The decay of these gauge bosons (which can generate secondary neutrinos) is trea
 We found agreement with the results of~\cite{Roulet:1992pz} for the $\nu + \bar \nu \to W + W$ but not for the $\nu + \bar \nu \to Z + Z$ process.
 We therefore quote the results we found for this channel below
 %
-\begin{align}
-\sigma_{\nu \bar \nu \to Z Z}(s_{12})  = 
+\begin{align} \nonumber
+\sigma_{\nu \bar \nu \to Z Z}(s_{12})  &=\frac{8 \alpha_{G_F}^2 \pi g_{L,\nu}^4}{s_{12} (y-2) y}
+\left(  \frac{1}{2} (y^2+4) \ln \left[ \frac{a+1}{a-1}  \right] - \sqrt{(y-4)y^3} + 2 \sqrt{(y-4)y} \right) \\
+y &= \frac{s_{12}}{m_Z^2} \,,\qquad a = \frac{y-2}{\sqrt{(y-4)y}}
 \end{align}
 %
 To validate this result we first performed a numerical check of the squared amplitude against that obtained with Recola2, and then performed both a numerical and analytic integration of phase-space.
