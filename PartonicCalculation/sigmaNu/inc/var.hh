@@ -134,6 +134,10 @@ namespace Variables {
 	extern bool active_costh13_min, active_costh13_max;
 	extern double costh13_min,		costh13_max;
 
+	// m45 invariant mass selection (test BW approx.)
+	extern bool active_m45_min,		active_m45_max;
+	extern double m45_min,			m45_max;
+
 	// Function to initialise Recola processes
 	void init_channels();
 	// Prints channel information

@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
 	//////////////////////////////
 	// Store cross-section data //
 	//////////////////////////////
-	const std::string s_analysis[3] = {"SigmaIncl","SigmaIncl_Ecms","dSigmaCosth13"};
+	const std::string s_analysis[4] = {"SigmaIncl","SigmaIncl_Ecms","dSigmaCosth13","dsigdcosth"};
   string outfile = s_analysis[isetup]+"_channel"+to_string(channel);
   // If active virtual, add NLO tag to file
   if( active_virtual ) outfile = outfile +"_virt";
@@ -330,7 +330,6 @@ int main(int argc, char *argv[])
 	/////////////////	
   struct timeval t0, t1;
   gettimeofday(&t0,NULL);
-
 
   // Fiducial results for isetup < 3
   if( isetup == 0 ){
@@ -437,13 +436,87 @@ int main(int argc, char *argv[])
 			// Compute analytically at the bin centre
 			double dsigma_analytic = dsigma_Interface_2to2(Ecms2, "costh13_com", costh13_cen, channel );
 
+			double dsigma_edges = ( dsigma_Interface_2to2(Ecms2, "costh13_com", costh13_max, channel ) - dsigma_Interface_2to2(Ecms2, "costh13_com", costh13_min, channel ) );
+			// Better approach to compute at lower and upper bin edge, look at the difference
+
 			cout << "Ratio of the results\n\n\n" << endl;
 			cout << (dsigma_diff[0] / bin_width) / dsigma_analytic << endl;
+
+			// cout << (dsigma_diff[0] ) / dsigma_edges << endl;
 		}
 
 	}
 
+	// cos_theta predictions for 1 GeV, 1 TeV, 1 PeV
+  // Differential cross-section in dcosth_13 at fixed-energy
+  if( isetup == 3 ){
 
+  	// Perform the differential cross-section in dcosth_13
+		double costh13_low = -1;
+		double costh13_up = +1.;
+		// Number of bins to consider
+		int n_bins = 200;
+		vector<double> costh13_values = linspace( costh13_low, costh13_up, n_bins );
+		// Activate cuts
+		active_costh13_min = false;
+		active_costh13_max = false;
+
+		// Ecms values in GeV: GeV, TeV, PeV CoM energy configurations
+		vector<double> Ecms_values = {1.,1e2,1e3,1e6};
+
+		// 
+		for( int iEcms(0); iEcms < 4; iEcms++){
+			Ecms = Ecms_values[iEcms];
+			Ecms2 = pow(Ecms,2);
+
+			// Storage for the cross-section results for cos_theta values
+			vector< double > sigma;
+			// Loop over cos_theta bins
+			for( int ibin = 1; ibin < (n_bins-1); ibin++){			
+				// costh13_min = costh13_values[ibin];
+				// costh13_max = costh13_values[ibin+1];
+				// double costh13_cen = ( costh13_min + costh13_max ) / 2.;
+				// double bin_width = costh13_max - costh13_min;
+				double cos_th = costh13_values[ibin];
+
+				// Evaluate the cross-section
+				double dsigma_analytic = dsigma_Interface_2to2(Ecms2, "costh13_com", cos_th, channel );
+				// Save it
+				sigma.push_back( dsigma_analytic );
+			}
+
+			// Now save the results to the text file
+			ofile_results << endl << "# Ecms = " << Ecms << endl;
+			// Now the dsigma values
+			for( size_t isig(0); isig < sigma.size(); isig++ ){
+				ofile_results << costh13_values[isig+1] << "\t" << sigma[isig] << endl;
+			}
+			ofile_results << endl;
+		}
+	}
+
+
+
+
+
+
+
+
+			// // Compute the differential cross-section within a bin
+			// array<double,2> dsigma_diff = integration::vegasC4(Vegas_Interface, warmup_precision, integration_precision, cuba_dimensions, NULL, seed_cache, 0, max_evaluations );
+
+			// // Compute analytically at the bin centre
+
+			// double dsigma_edges = ( dsigma_Interface_2to2(Ecms2, "costh13_com", costh13_max, channel ) - dsigma_Interface_2to2(Ecms2, "costh13_com", costh13_min, channel ) );
+			// // Better approach to compute at lower and upper bin edge, look at the difference
+
+			// cout << "Ratio of the results\n\n\n" << endl;
+			// cout << (dsigma_diff[0] / bin_width) / dsigma_analytic << endl;
+
+			// cout << (dsigma_diff[0] ) / dsigma_edges << endl;
+		// }
+
+		// }
 
 
 

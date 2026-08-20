@@ -83,7 +83,6 @@ double dsigma_channels( KinematicData &Kin, int channel_id ){
                 // 37-39
                 if( channel_id >= 37 and channel_id <= 39 ) ME2 = ME2_Analytic::nunubar_ZZ(1,2,3,4, Kin);
 
-
                 // testing channel, for charm production
                 if( channel_id == 99 ) ME2 = ME2_Analytic::eeB0g0NCM(1,2,3,4, Kin, 11, 4);
 
@@ -103,7 +102,8 @@ double dsigma_channels( KinematicData &Kin, int channel_id ){
                 // 116-118) nu1  + gamma > l1 + nu1 + l1~ [same flavour]
                 if( channel_id > 115 and channel_id < 119 ){
                         // Currently only one I have not validated/cross-checked, just use Recola for now
-                        ME2 = 2.0 * ME2_Analytic::compute_process_recola(Kin,channel,0);
+                        // ME2 = 2.0 * ME2_Analytic::compute_process_recola(Kin,channel,0);
+                        ME2 = ME2_Analytic::compute_process_recola(Kin,channel,0);
                 }
                 // 119-121, nu1  + gamma > l1 + u d~ (massless quarks)        
                 if( channel_id > 118 and channel_id < 122 ) ME2 = ME2_Analytic::nu1gamma_l1qqbar(1, 2, 3, 4, 5, Kin);
@@ -114,6 +114,12 @@ double dsigma_channels( KinematicData &Kin, int channel_id ){
                         abort();
                 }
 
+        }
+
+        if( active_recola ){
+                double nu_spin_correction = ( channel < 100 )? 4.: 2.;
+                if( channel > 27 and channel < 34 ) nu_spin_correction = 2.;
+                ME2 *= nu_spin_correction;
         }
 
         // For performing phase-space point tests of the squared amplitudes
@@ -202,16 +208,6 @@ double nui_nui(double s){
 
 }
 
-// Implemented for channels: 1, 2, 6
-double sigma_nu_incl(double shat, int chan){
-
-        if( chan == 1 ) return nui_nui(shat);
-        if( chan == 2 ) return F0(shat,12) + F1(shat) + F2(shat);
-        if( chan == 6 ) return F1(shat);
-        if( chan == 9 ) return F0(shat,12);
-        return 0.0;
-}
-
 // nu nbar > W W, channels 34-36
 double sigma_WW_incl(double shat){
         double y = shat / pow(mw,2);
@@ -256,7 +252,6 @@ double sigma_ZZ_incl_Rhorry(double shat){
 
 
 // The neutrino + photon > W + l, cross-section Seckl 9709290 - Eq. (2)
-
 double sigma_Wl_incl(double shat, int chan){
 
         double msql(0.);
@@ -288,5 +283,26 @@ double sigma_Wl_incl(double shat, int chan){
 
 
 
+// Implemented for channels: 1, 2, 6
+double sigma_nu_incl(double shat, int chan){
 
+        if( chan == 1 ) return nui_nui(shat);
+        if( chan == 2 ) return F0(shat,12) + F1(shat) + F2(shat);
+        if( chan == 6 ) return F1(shat);
+        if( chan == 9 ) return F0(shat,12);
+        // nu gamma > W l
+        if( chan >= 28 and chan < 34 ){
+                return sigma_Wl_incl(shat,chan);
+        }
+        // WW
+        if( chan >= 34 and chan <= 36 ){
+                return sigma_WW_incl(shat);
+        }
+        // ZZ
+        if( chan >= 37 and chan <= 39 ){
+                return sigma_ZZ_incl_Rhorry(shat);
+        }
+        cout << "Analytic result for channel " << chan << " not implemented\n";
+        return 0.0;
+}
 

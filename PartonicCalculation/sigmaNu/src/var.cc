@@ -50,7 +50,8 @@ double Variables::pTnu_min, 		Variables::pTnu_max;
 bool Variables::active_costh13_min, Variables::active_costh13_max;
 double Variables::costh13_min, Variables::costh13_max;
 
-
+bool Variables::active_m45_min,	Variables::active_m45_max;
+double Variables::m45_min, Variables::m45_max;
 
 // Function to update the cuba integration dimenions for every implemented process
 void Variables::update_process_dimensions(){

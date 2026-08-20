@@ -165,8 +165,8 @@ int main(int argc, char *argv[])
   mu0 = mz;
 	mu_loop = 100.;	// No results depend on mu_reg value
 	// Set the collision environment (pp collisions at LHC 13 TeV)
-	// Ecms = 1e6;
-	Ecms = 1e5;
+	Ecms = 2e2;
+	// Ecms = 5*92.;
 	Ecms2 = pow(Ecms,2);
 
 	int isetup(0); // If we perhaps want to select some specific processes
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 	// Information for Vegas //
 	///////////////////////////	
 	double warmup_precision = 1e-2;
-	double integration_precision = 1e-4;
+	double integration_precision = 1e-3;
 	int grid_no = 3;
 	grid_cache = grid_no;
 	int max_evaluations = 2e7;
@@ -219,6 +219,11 @@ int main(int argc, char *argv[])
 		warmup_precision = 1e-1;
 		integration_precision = 1e-2;
 	}
+
+	cout << "shit!\n";
+	cout << "chan 1: " << sigma_nu_incl(1e6,1) << endl;
+	cout << "chan 6: " << sigma_nu_incl(1e6,6) << endl;
+	exit(0);
 
 	//////////////////////////////
 	// Store cross-section data //
@@ -244,25 +249,6 @@ int main(int argc, char *argv[])
   struct timeval t0, t1;
   gettimeofday(&t0,NULL);
 
-  // Test a single phase-space point
-
-	// double pset[n][4];
-	// for( int i = 0; i < n; i++){
-	// 	for( int j = 0; j < 4; j++)
-	// 		pset[i][j] = Kin.p(i+1).pi(j);
-	// }
-
-	// // for( int i = 0; i < n; i++)
-	// // 	cout << pset[i][0] << " " 
-	// // 		 << pset[i][1] << " "
-	// // 		 << pset[i][2] << " "
-	// // 		 << pset[i][3] << "\n";
-	// string order = (virt)? "NLO":"LO";
-
-	// double temp[2];
-	// Recola::compute_process_rcl(process,pset,order,temp);  
-
-
   // Fiducial results for isetup < 3
   if( isetup == 0 ){
 		// Run a test integral, returns an array with two entries < integral, error >, accessed via test_setup[0] and test_setup[1] respectively.
@@ -276,23 +262,14 @@ int main(int argc, char *argv[])
 		cout << "Integral = " << sigma_fiducial[0] << endl;
 		cout << "Error = " << sigma_fiducial[1] << endl;	
 
-		// cout << sigma_Wl_incl( Ecms2, channel ) << endl;
-		// cout << sigma_nu_incl( Ecms2, channel ) << endl;
-
-		if( channel >= 34 and channel <= 36 ){
-			cout << "Analytic result = " << sigma_WW_incl( Ecms2 ) << endl;
-		}
-		if( channel >= 37 and channel <= 39 ){
-			cout << "Analytic result = " << sigma_ZZ_incl( Ecms2 ) << endl;
-			cout << "Analytic result Rhorry = " << sigma_ZZ_incl_Rhorry( Ecms2 ) << endl;
-
-		}
+		// Calculate analytic result
+		cout << "Analytic result " << sigma_nu_incl( Ecms2, channel ) << endl;
 
 		// Save this information to the file
 		ofile_results << "# Sigma Fiducial: sigma\terror\tsigma_analytic\tratio" << endl;
 
 		// Include a function which writes all relevant information to the text file
-		ofile_results << sigma_fiducial[0] << "\t" << sigma_fiducial[1] << "\t" << sigma_nu_incl(Ecms2,channel) << "\t" << sigma_fiducial[0]/sigma_nu_incl(Ecms2,channel) << endl;
+		ofile_results << sigma_fiducial[0] << "\t" << sigma_fiducial[1] << "\t" << sigma_nu_incl(Ecms2,channel) << "\t" << sigma_nu_incl(Ecms2,channel)/sigma_fiducial[0] << endl;
 	}
 
 	// Set up the energy scan
@@ -302,10 +279,10 @@ int main(int argc, char *argv[])
 
 		// Gaetano look at 10^8 eV^2 > 10^24 eV^2
 		// Corresponds to 10^4 eV > 10^12 eV: 
-		double Ecms_low = 1e-7;
-		double Ecms_high = 1e5;
+		double Ecms_low = 1.;//mw - 5.;
+		double Ecms_high = 1e8;//10*mw;
 		// Number of bins to consider
-		int n_bins = 500;
+		int n_bins = 40;
 		vector<double> Ecms_values = linspace( log(Ecms_low),log(Ecms_high), n_bins);
 		// Note, the cross-sections plateau above 5x10^3 GeV
 		// ^^^^^^^^^^^^^^^^^^^^^^^
@@ -322,35 +299,16 @@ int main(int argc, char *argv[])
 			sigma.push_back( sigma_incl );
 		}
 
-		ofile_results << "# Ecms\tsigma[pb]\tsigma_error[pb]\tsigma_analytic[pb]\tratio\n";
+		ofile_results << "# Ecms\tsigma[pb]\tsigma_error[pb]\tsigma_LO_analytic[pb]\tratio(NLO/LO)\n";
 		// Write the results to the file
 		for( unsigned int i=0; i < sigma.size(); i++ ){
 		// for( auto i: sigma ){
 			array<double,2> sig = sigma[i];
-
-			// For performing some analytic checks: channels (1,2,6,9)
-			if( channel == 1 or channel == 2 or channel == 6 or channel == 9 ){
-				Ecms2 =	pow( exp(Ecms_values[i]), 2);
-				double sigma_analytic = sigma_nu_incl(Ecms2,channel);
-				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << "\t" << sigma_analytic << "\t" << sig[0]/sigma_analytic << endl;
-			}
-			else if( channel >= 28 and channel <= 33 ){
-				Ecms2 =	pow( exp(Ecms_values[i]), 2);
-				double sigma_analytic = sigma_Wl_incl(Ecms2,channel);
-				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << "\t" << sigma_analytic << "\t" << sig[0]/sigma_analytic << endl;
-
-			}
-			else{
-				ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << endl;
-			}
-
-		}		
+			Ecms2 =	pow( exp(Ecms_values[i]), 2);
+			double sigma_analytic = sigma_nu_incl(Ecms2,channel);
+			ofile_results << exp(Ecms_values[i]) << "\t"	<< sig[0] << "\t" << sig[1] << "\t" << sigma_analytic << "\t" << sig[0]/sigma_analytic << endl;
+		}
 	}
-
-
-
-
-
 
 	ofile_results.close();
 

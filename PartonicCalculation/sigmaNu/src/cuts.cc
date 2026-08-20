@@ -35,6 +35,24 @@ void apply_cuts( KinematicData &Kin ){
                 }
         }
 
+        if( active_m45_min or active_m45_max ){
+                // Safeguard
+                if( Kin.length() == 2 ){
+                        cerr << "apply_cuts: m45 cuts active but 2to2 process set\n";
+                        exit(0);
+                }
+
+                // Otherwise apply cuts
+                p4vec p45 = Kin.p(4) + Kin.p(5);
+                double m45 = p45.m();
+                if( active_m45_min ){
+                        if( m45 < m45_min ) return;
+                }
+                if( active_m45_max ){
+                        if( m45 > m45_max ) return;
+                }
+        }
+
         // Otherwise these cuts are passed, and set True!
         Kin.set_cuts(true);
         return;

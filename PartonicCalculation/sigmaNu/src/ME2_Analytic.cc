@@ -1188,7 +1188,7 @@ double ME2_Analytic::compute_process_recola(KinematicData &Kin, int process, boo
 	if( order == "LO" ) return temp[0];
 	// Return just 2 Re | M1 M0 |, obtain with lower stat. precision for efficiency
 	else{
-		return temp[1];
+		return temp[0] + temp[1];
 	}
 
 	// |M0|^2 + 2 Re | M1 M0 |
