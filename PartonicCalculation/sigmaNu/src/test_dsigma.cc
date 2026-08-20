@@ -220,10 +220,10 @@ int main(int argc, char *argv[])
 		integration_precision = 1e-2;
 	}
 
-	cout << "shit!\n";
-	cout << "chan 1: " << sigma_nu_incl(1e6,1) << endl;
-	cout << "chan 6: " << sigma_nu_incl(1e6,6) << endl;
-	exit(0);
+	// cout << "shit!\n";
+	// cout << "chan 1: " << sigma_nu_incl(1e6,1) << endl;
+	// cout << "chan 6: " << sigma_nu_incl(1e6,6) << endl;
+	// exit(0);
 
 	//////////////////////////////
 	// Store cross-section data //
