@@ -19,7 +19,7 @@ private:
     std::vector<std::string> interactionChannels;
     std::vector<std::vector<int>> productsID; // ID1, ID2(, ID3)
     std::vector<int> active;
-    std::string interactionFolderPath = "/Applications/CRPropa/NuNuInteractionv1/CRPropa3-data-zDep/dataOff/NeutrinoInteractions/NeutrinoAntineutrinoInteraction/";
+    std::string interactionFolderPath = "/sdf/home/g/gaetano/CRPropa/CRPropa3-data/dataOff/NeutrinoInteractions/NeutrinoAntineutrinoInteraction/";
     
 public:
 // enum C++

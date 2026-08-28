@@ -51,7 +51,6 @@ void NeutrinoOscillation::process(Candidate *candidate) const {
         Vector3d pos = random.randomInterpolatedPosition(candidate->previous.getPosition(), candidate->current.getPosition());
         candidate->current.setPosition(pos);
         candidate->current.setId(newID);
-        std::cout << "Oscillated to ID: " << newID << std::endl;
     }
     //evolve(candidate, ID, E, step);
     // Formal note:
@@ -61,4 +60,3 @@ void NeutrinoOscillation::process(Candidate *candidate) const {
 
 
 } // end namespace nupropa
-

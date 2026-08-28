@@ -17,32 +17,36 @@
 #include <stdexcept>
 #include <filesystem>
 #include <unordered_map>
+#include <cmath>
+#include <iostream>
 
 namespace nupropa {
 
 using namespace crpropa;
 
-NeutrinoPhotonInteraction::NeutrinoPhotonInteraction(ref_ptr<PhotonField> photonField, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries, double limit) { //double thinning,
-    
-    setPhotonField(photonField);
+NeutrinoPhotonInteraction::NeutrinoPhotonInteraction(ref_ptr<PhotonField> photonField, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries, double limit) : Module(), secondariesDistribution("dsigdcosth") { //double thinning,
+
     setHaveSecondaries(haveSecondaries);
+    setPhotonField(photonField);
     setLimit(limit);
     //setThinning(thinning);
     setNeutrinoMixing(neutrinoMixing);
-    
+
 }
 
 void NeutrinoPhotonInteraction::setPhotonField(ref_ptr<PhotonField> photonField) {
-    
+
     this->photonField = photonField;
     std::string fname = photonField->getFieldName();
     setDescription("NeutrinoPhotonInteraction::Module" + fname);
-    
-    std::string pathPh = "/Applications/CRPropa/NuNuInteractionv1/CRPropa3-data-zDep/dataOff/NeutrinoInteractions/NeutrinoPhotonInteraction/";
-    
+
+    std::string pathPh = "/sdf/home/g/gaetano/CRPropa/CRPropa3-data/dataOff/NeutrinoInteractions/NeutrinoPhotonInteraction/";
+
     initRate(pathPh);
     initCumulativeRate(pathPh);
-    
+    // Disabled for the on-shell W approximation in performInteraction().
+    // buildSecondariesDistributionClass();
+
 }
 
 // set the neutrino mixing parameters
@@ -66,13 +70,13 @@ void NeutrinoPhotonInteraction::setThinning(double thinning) {
 
 void NeutrinoPhotonInteraction::loadRateFile(const std::string& fileName) {
     std::ifstream infile(fileName.c_str());
-    
+
     if (!infile.good()) {
         throw std::runtime_error("Could not open file: " + fileName);
     }
-    
+
     std::vector<double> vecEnergy, vecRate;
-    
+
     while (infile.good()) {
         if (infile.peek() != '#') {
             double a, b;
@@ -84,26 +88,26 @@ void NeutrinoPhotonInteraction::loadRateFile(const std::string& fileName) {
         }
         infile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
-    
+
     infile.close();
-    
+
     this->tabEnergy.push_back(vecEnergy);
     this->tabRate.push_back(vecRate);
-    
+
 }
 
 void NeutrinoPhotonInteraction::initRate(std::string filePath) {
-    
+
     tabEnergy.clear();
     tabRate.clear();
     ratesDictionary.clear();
-    
+
     std::vector<std::string> flavours = {"Electron", "Muon", "Tau"};
     std::vector<std::string> masses = {"m1", "m2", "m3"};
-    
+
     int i = 0;
     std::unordered_map<std::string, int> ratesDict;
-    
+
     // 3 masses for each redshift and each flavour! m1, m2, m1, ...
     /**
      Electron .. _m1_z0     0
@@ -114,37 +118,35 @@ void NeutrinoPhotonInteraction::initRate(std::string filePath) {
     */
     for (const auto& f : flavours) {
         for (const auto& a : masses) {
-            
+
             loadRateFile(filePath + "Neutrino" + f + "PhotonInteraction/rate_" + this->photonField->getFieldName() + "_" +  a + ".txt");
             ratesDict[f + "_" + this->photonField->getFieldName() + "_" + a] = i;
-            
+
             i = i + 1;
-            
+
         }
     }
-    
-    
-    
+
     this->ratesDictionary = ratesDict;
-    
+
 }
 
 void NeutrinoPhotonInteraction::loadCumulativeRateFile(const std::string& fileName) {
-    
+
     std::ifstream infile(fileName.c_str());
-    
+
     if (!infile.good())
         throw std::runtime_error("NeutrinoPhotonInteraction: could not open file" + fileName);
-    
+
     // skip header
     while (infile.peek() == '#')
         infile.ignore(std::numeric_limits < std::streamsize > ::max(), '\n');
-    
+
     // declare the row vectors
     std::vector<double> vecE;
     std::vector<double> vecs;
     std::vector<std::vector<double>> vecCDF;
-    
+
     // read s values in the first line
     double a;
     infile >> a; // skip the first value
@@ -152,15 +154,15 @@ void NeutrinoPhotonInteraction::loadCumulativeRateFile(const std::string& fileNa
         infile >> a;
         vecs.push_back(pow(10, a) * eV * eV);
     }
-    
+
     // read all the following lines: E, cdf values
     while(infile.good()) {
         infile >> a;
         if (!infile)
             break; // end of file
-        
+
         vecE.push_back(pow(10, a) * eV);
-        
+
         std::vector<double> cdf;
         for (int i = 0; i < vecs.size(); i++) {
             infile >> a;
@@ -168,7 +170,7 @@ void NeutrinoPhotonInteraction::loadCumulativeRateFile(const std::string& fileNa
         }
         vecCDF.push_back(cdf);
     }
-    
+
     this->tabs.push_back(vecs);
     this->tabE.push_back(vecE);
     this->tabCDF.push_back(vecCDF);
@@ -176,14 +178,14 @@ void NeutrinoPhotonInteraction::loadCumulativeRateFile(const std::string& fileNa
 }
 
 void NeutrinoPhotonInteraction::initCumulativeRate(std::string filePath) {
-    
+
     tabE.clear();
     tabs.clear();
     tabCDF.clear();
-    
+
     std::vector<std::string> flavours = {"Electron", "Muon", "Tau"};
     std::vector<std::string> masses = {"m1", "m2", "m3"};
-    
+
     // 3 masses for each redshift and each flavour! m1, m2, m1, ...
     /**
      Electron .. _m1_z0     0
@@ -194,10 +196,28 @@ void NeutrinoPhotonInteraction::initCumulativeRate(std::string filePath) {
     */
     for (const auto& f : flavours) {
         for (const auto& a : masses) {
-                
+
             loadCumulativeRateFile(filePath + "Neutrino" + f + "PhotonInteraction/cdf_" + this->photonField->getFieldName() + "_" +  a + ".txt");
-        
+
         }
+    }
+}
+
+void NeutrinoPhotonInteraction::buildSecondariesDistributionClass() {
+
+    if (not haveSecondaries)
+        return;
+
+    /**if (ID == 12 || ID == 14 || ID == 16)
+     return (ID + 44) / 2;   // neutrinos: 12 to 28, 14 to 29, 16 to 30
+ if (ID == -12 || ID == -14 || ID == -16)
+     return (50 - ID) / 2;   // antineutrinos: -12 to 31, -14 to 32, -16 to 33
+ return -1; // invalid ID*/
+
+    std::vector<int> channelsId = {28, 29, 30, 31, 32, 33};
+
+    for (int i = 0; i < channelsId.size(); ++i) {
+        this->secondariesDistribution.buildChannel(channelsId[i]);
     }
 }
 
@@ -206,21 +226,23 @@ void NeutrinoPhotonInteraction::setRelativisticInteraction(double m1, double E, 
 }
 
 int NeutrinoPhotonInteraction::interactionIndex(int ID, double mass) const {
-    
+
     int indexMass = this->neutrinoMixing->massToIndexMass(mass / eV) + 1;
     std::string massComb = this->photonField->getFieldName() + "_m" + std::to_string(indexMass);
-    
+
     std::string alpha;
     if (abs(ID) == 12) {
         alpha = "Electron";
-    } else if (abs(ID) == 12) {
+    } else if (abs(ID) == 14) {
         alpha = "Muon";
-    } else {
+    } else if (abs(ID) == 16) {
         alpha = "Tau";
+    } else {
+        throw std::runtime_error("Unsupported neutrino ID in interactionIndex: " + std::to_string(ID));
     }
-    
+
     auto it = this->ratesDictionary.find(alpha + "_" + massComb);
-    
+
     int index;
     if (it != this->ratesDictionary.end()) {
         index = it->second;
@@ -231,170 +253,6 @@ int NeutrinoPhotonInteraction::interactionIndex(int ID, double mass) const {
     return index;
 }
 
-class NeutrinoPhotonSecondariesDistribution {
-    private:
-        std::vector< std::vector<double> > data;
-        std::vector<double> s_values;
-        std::vector<double> costh13_com_values;
-        size_t Ns;
-        size_t Nrer;
-        double s_min;
-        double s_max;
-        double costh_min;
-        double costh_max;
-        double dcosth;
-        double dls;
-    
-    public:
-        
-    NeutrinoPhotonSecondariesDistribution(std::string variable, int idChannel, double sThr) {
-        
-        Ns = 1000;
-        Nrer = 1000;
-        
-        s_min = sThr;
-        s_max = 1e28 * eV * eV;
-        dls = (log(s_max) - log(s_min)) / Ns;
-        
-        costh_min = -1;
-        costh_max = 1;
-        dcosth = (costh_max - costh_min) / Nrer;
-        
-        data = std::vector< std::vector<double> >(1000, std::vector<double>(1000));
-        std::vector<double> data_i(1000);
-        
-        // tabulating the s bin borders
-        s_values = std::vector<double>(1001);
-        for (size_t i = 0; i < Ns + 1; ++i)
-            s_values[i] = s_min * exp(i * dls);
-        
-        if (variable != "dsigdcosth")
-            throw std::runtime_error("The only available variable to compute the differential cross section is costheta13_com!");
-        
-        // tabulating the costh13_com bin borders
-        costh13_com_values = std::vector<double>(1001);
-        for (size_t i = 0; i < Nrer + 1; ++i)
-            costh13_com_values[i] = costh_min + i * dcosth;
-        
-        // to generate randomly the seed to produce the differential cross section
-        // Random &random = Random::instance();
-        // int seedDiffXS = random.randInt();
-        // not affecting the results
-        int seedDiffXS = 1;
-        
-        // for each s and costh13_com tabulate the cumulative differential cross section
-        for (size_t i = 0; i < Ns; i++) {
-            double s = s_min * exp((i + 0.5) * dls);
-            
-            // cumulative midpoint integration
-            data_i[0] = getDifferentialXS(s, variable, costh_min, idChannel, seedDiffXS) * (dcosth * i);  // to check * (dcosth[i] - 1)!!!
-            
-            
-            for (size_t j = 1; j < Nrer; j++) {
-                double costh13_com = costh_min + (j + 0.5) * dcosth;
-                double dcosth13_com = (j + 1) * dcosth - j * dcosth; // since we are on a linear scale, dcosth13_com == dcosth
-                
-                data_i[j] = getDifferentialXS(s, variable, costh13_com, idChannel, seedDiffXS) * dcosth13_com;
-                data_i[j] += data_i[j - 1];
-            }
-            data[i] = data_i;
-        }
-    }
-    
-    double getDifferentialXS(double s, std::string variable, double variableValue, int idChannel, int seedDiffXS) {
-         
-        std::string partonicPath = "/Applications/CRPropa/NuPropaLap/PartonicCalculation/sigmaNu_interface/"; // to change with NUPROPA path
-        std::string interfacePath = partonicPath + "bin/";
-        
-        std::ostringstream ss;
-        ss << std::scientific << std::setprecision(5) << std::sqrt(s / GeV / GeV);
-        std::string Ecms = ss.str();
-
-        double Ecms_val = std::sqrt(s / GeV / GeV);
-        
-        if (std::isnan(Ecms_val) || !std::isfinite(Ecms_val)) { // to format in CRPropa style!
-                std::ostringstream err;
-                err << "\n[FATAL] Ecms is NaN or infinite\n"
-                    << "--------------------------------\n"
-                    << "s               = " << s << "\n"
-                    << "GeV             = " << GeV << "\n"
-                    << "idChannel       = " << idChannel << "\n"
-                    << "variable        = " << variable << "\n"
-                    << "variableValue   = " << variableValue << "\n"
-                    << "seedDiffXS      = " << seedDiffXS << "\n"
-                    << "s/(GeV*GeV)     = " << s/(GeV*GeV) << "\n";
-
-                throw std::runtime_error(err.str());
-        }
-        
-        std::string filePath = partonicPath + "dataDifferentialXS/channel" + std::to_string(idChannel) + "/";
-        std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) +
-                               "_Ecms" + Ecms + "_s" + std::to_string(seedDiffXS) + ".txt";
-
-        if (!std::ifstream(filename)) {
-            std::ostringstream cmd;
-            cmd << interfacePath << "Main_Interface.exe"
-                << " -c " << idChannel
-                << " -s " << seedDiffXS
-                << " -E " << std::sqrt(s / GeV / GeV); // Ecms in GeV
-
-            int result = std::system(cmd.str().c_str());
-            if (result != 0) {
-                std::ostringstream oss;
-                oss << "Error: Failed to run Main_Interface.exe, with exit code: " << result;
-                throw std::runtime_error(oss.str());
-            }
-        }
-        
-        std::vector<double> variableScan;
-        std::vector<double> differentialXS;
-        
-        std::ifstream infile(filename);
-
-        if (!infile) {
-            std::ostringstream oss;
-            oss << "Error: could not open the differentialXS file. The filename is: " << filename;
-            throw std::runtime_error(oss.str());
-        } else {
-            std::string line;
-            double a, b;
-            
-            while (std::getline(infile, line)) {
-                // skip empty lines or lines starting with '#'
-                if (line.empty() || line[0] == '#') continue;
-
-                std::istringstream iss(line);
-                if (iss >> a >> b) {
-                    variableScan.push_back(a);
-                    differentialXS.push_back(b);
-                } else {
-                    // if parsing failed on a non-comment line, optionally throw or skip
-                    std::ostringstream oss;
-                    oss << "Error: could not parse line: \"" << line << "\" in file " << filename;
-                    throw std::runtime_error(oss.str());
-                }
-            }
-            infile.close();
-        }
-
-        double diffXS = interpolate(variableValue, variableScan, differentialXS);
-        return diffXS;
-        
-    }
-
-    // draw random costh13_com from the differential cross section distribution
-    double sample(double s) {
-        size_t idx = std::lower_bound(s_values.begin(), s_values.end(), s) - s_values.begin();
-        std::vector<double> s0 = data[idx];
-        
-        Random &random = Random::instance();
-        size_t j = random.randBin(s0); // draw random bin (lower bin boundary returned)
-        double costh13_comRand = costh_min + j * dcosth;
-        return costh13_comRand;
-    }
-    
-};
-
 int NeutrinoPhotonInteraction::fromIDtoChannel(int ID) const {
     if (ID == 12 || ID == 14 || ID == 16)
         return (ID + 44) / 2;   // neutrinos: 12 to 28, 14 to 29, 16 to 30
@@ -404,30 +262,67 @@ int NeutrinoPhotonInteraction::fromIDtoChannel(int ID) const {
 }
 
 void NeutrinoPhotonInteraction::performInteraction(Candidate *candidate, int index, double mass) const {
-    
-    candidate->setActive(false);
-    
-    if (not haveSecondaries)
+
+    if (not haveSecondaries) {
+        candidate->setActive(false);
         return;
-    
+    }
+
     double z = candidate->getRedshift();
     double E = candidate->current.getEnergy() * (1 + z);
     int ID = candidate->current.getId();
     double w = 1.; // no weights so far!
-    
+
+    Random &random = Random::instance();
+    int WbosonID = (ID > 0) ? 24 : -24;
+    int leptonID = (ID > 0) ? ID - 1 : ID + 1;
+    ParticleData particle;
+    double WbosonRestEnergy = particle.getParticleMass(std::abs(WbosonID)) * c_squared;
+    double leptonRestEnergy = particle.getParticleMass(std::abs(leptonID)) * c_squared;
+    // Work in the interaction frame at redshift z. The W is produced exactly
+    // on shell and handed to the decay plugin without redshift rescaling; the
+    // charged lepton receives the remaining interaction energy and follows the
+    // usual CRPropa storage convention.
+    const double pythiaThresholdMargin = 1e-6;
+    double WbosonEnergy = WbosonRestEnergy;
+    double leptonEnergy = E - WbosonEnergy;
+    Vector3d pos = random.randomInterpolatedPosition(
+        candidate->previous.getPosition(), candidate->current.getPosition());
+
+    candidate->setActive(false);
+    // Produce the W on shell and give the exact remaining interaction energy
+    // to the corresponding charged lepton.
+    candidate->addSecondary(WbosonID, WbosonEnergy, pos, w, interactionTag);
+    if (leptonEnergy < leptonRestEnergy * (1 + pythiaThresholdMargin))
+        return;
+    candidate->addSecondary(leptonID, leptonEnergy / (1 + z), pos, w, interactionTag);
+
+#if 0
+    // Differential-cross-section secondary production, temporarily disabled.
     std::vector<double> vecE = this->tabE[index];
     std::vector<double> vecs = this->tabs[index];
     std::vector<std::vector<double>> vecCDF = this->tabCDF[index];
-    
+
     // check if in tabulated energy range
-    if (E < vecE.front() or (E > vecE.back()))
+    if (vecE.empty() || vecs.empty() || vecCDF.empty()) {
+        std::cout << "NuPhoton no secondaries: empty tables"
+                  << " index=" << index << std::endl;
         return;
-    
+    }
+    if (E < vecE.front() or (E > vecE.back())) {
+        std::cout << "NuPhoton no secondaries: E outside secondary table"
+                  << " E=" << E / EeV
+                  << " Emin=" << vecE.front() / EeV
+                  << " Emax=" << vecE.back() / EeV
+                  << std::endl;
+        return;
+    }
+
     int leptonID;
     int WbosonID;
-    
+
     int channelID = fromIDtoChannel(ID);
-    
+
     if (ID > 0) {
         leptonID = ID - 1;
         WbosonID = 24; // W+
@@ -435,65 +330,130 @@ void NeutrinoPhotonInteraction::performInteraction(Candidate *candidate, int ind
         leptonID = ID + 1;
         WbosonID = -24; // W-
     }
-    
+
     ParticleData particle;
     double leptonMass = particle.getParticleMass(leptonID); // in kg
     double WbosonMass = particle.getParticleMass(WbosonID); // in kg
-    
-    double sThr = (leptonMass * leptonMass + WbosonMass * WbosonMass) * c_squared * c_squared;
-    
+
+    double sThr = std::pow(leptonMass + WbosonMass, 2) * c_squared * c_squared;
+
     // sample the value of s
-    Random &random = Random::instance();
     size_t i = closestIndex(E, vecE);  // find closest tabulation point
+    if (i >= vecCDF.size()) {
+        std::cout << "NuPhoton no secondaries: CDF index out of range"
+                  << " i=" << i << " size=" << vecCDF.size() << std::endl;
+        return;
+    }
     size_t j = random.randBin(vecCDF[i]);
-    
-    double lo = std::max(sThr, vecs[j-1]); // first s-tabulation point below min(s_kin);
+    if (j >= vecs.size()) {
+        std::cout << "NuPhoton no secondaries: s-bin out of range"
+                  << " j=" << j << " size=" << vecs.size() << std::endl;
+        return;
+    }
+
     double hi = vecs[j];
+    double lo = (j == 0) ? sThr : std::max(sThr, vecs[j - 1]); // first s-tabulation point below min(s_kin)
+    if (hi < lo)
+        hi = lo;
     double s = lo + random.rand() * (hi - lo); // should I add the neutrino masses? since it is the s_kin!!
-    
+
     // sample the cosine of theta13_com
-    std::string variable = "dsigdcosth";
-    static NeutrinoPhotonSecondariesDistribution distribution(variable, channelID, sThr);
-    double costh13_com = distribution.sample(s);
-    
-    std::cout << "costh13_com: " << costh13_com << std::endl;
-    setRelativisticInteraction(mass, E, s);
-    
-    // energies of the secondary particles
-    std::vector<double> energies = this->relInteraction->getProductEnergiesLab(s, costh13_com, leptonMass, WbosonMass);
-  
+    double costh13_com = this->secondariesDistribution.sample(channelID, s, sThr);
+
+    std::vector<double> energies;
+    double targetMinEnergy = photonField->getMinimumPhotonEnergy(z);
+    double targetMaxEnergy = photonField->getMaximumPhotonEnergy(z);
+    try {
+        // Use a local instance to avoid shared mutable state across threads.
+        RelativisticInteraction relInteraction(mass / c_squared, E, s);
+        // energies of the secondary particles
+        energies = relInteraction.getProductEnergiesLab(s, costh13_com, leptonMass, WbosonMass);
+        if (energies.size() < 2) {
+            std::cout << "No secondaries: energies.size()=" << energies.size()
+                      << " channel=" << channelID << std::endl;
+            return;
+        }
+
+        double maxAvailable = E + relInteraction.getTargetEnergyLab();
+        double totalOutgoing = energies[0] + energies[1];
+        bool invalidEnergy = (!std::isfinite(totalOutgoing) || !std::isfinite(maxAvailable));
+        bool highEnergy = (totalOutgoing > 1.05 * maxAvailable);
+        for (double e : energies) {
+            if (!std::isfinite(e) || e < 0 || e > 1.05 * maxAvailable)
+                highEnergy = true;
+            if (!std::isfinite(e) || e < 0)
+                invalidEnergy = true;
+        }
+        if (invalidEnergy || highEnergy) {
+            std::cout << "Bad secondary energy: E=" << E / EeV
+                      << " target=" << relInteraction.getTargetEnergyLab() / EeV
+                      << " out=" << totalOutgoing / EeV
+                      << " ratio=" << totalOutgoing / maxAvailable
+                      << std::endl;
+            if (invalidEnergy)
+                throw std::runtime_error("Invalid secondary energy");
+        }
+    } catch (const std::exception& ex) {
+        std::cout << "NuPhoton secondary kinematics failed: " << ex.what()
+                  << " E=" << E / EeV
+                  << " s=" << s / (GeV * GeV)
+                  << " channel=" << channelID
+                  << " leptonID=" << leptonID
+                  << " WbosonID=" << WbosonID
+                  << " leptonMass=" << leptonMass
+                  << " WbosonMass=" << WbosonMass
+                  << " targetMin=" << targetMinEnergy / eV
+                  << " targetMax=" << targetMaxEnergy / eV
+                  << " costh13_com=" << costh13_com
+                  << std::endl;
+        throw;
+    }
+    if (energies.size() < 2) {
+        std::cout << "No secondaries: energies.size()=" << energies.size()
+                  << " channel=" << channelID << std::endl;
+        return;
+    }
+    for (double e : energies) {
+        if (!std::isfinite(e))
+            return;
+    }
+
     Vector3d pos = random.randomInterpolatedPosition(candidate->previous.getPosition(), candidate->current.getPosition());
-    
+    candidate->setActive(false);
+
     //if (haveSecondaries)?, add thinning
     candidate->addSecondary(leptonID, energies[0] / (1 + z), pos, w, interactionTag);
     // W production, to check if on shell?
     candidate->addSecondary(WbosonID, energies[1] / (1 + z), pos, w, interactionTag);
-    
+#endif
+
 }
 
 void NeutrinoPhotonInteraction::process(Candidate *candidate) const {
-    
+
     // scale the electron energy instead of background photons
     double z = candidate->getRedshift();
-    double E = (1 + z) * candidate->current.getEnergy();
+    double E = candidate->current.getEnergy() * (1 + z);
     double ID = candidate->current.getId();
-    
+
     if (!(abs(ID) == 12 || abs(ID) == 14 || abs(ID) == 16))
         return;
-   
+
      double mass = this->neutrinoMixing->fromFlavourToMass(ID) * eV; // returned in eV from the function
-    
+
     int index = interactionIndex(ID, mass);
-    
+
     std::vector<double> vecEnergy = this->tabEnergy[index];
     std::vector<double> vecRate = this->tabRate[index];
-     
+
     // check if in tabulated energy range
     if (E < vecEnergy.front() or (E > vecEnergy.back()))
         return;
 
     // interaction rate
     double rate = interpolate(E, vecEnergy, vecRate);
+    if (!std::isfinite(rate) || rate <= 0)
+        return;
     rate *= pow_integer<2>(1 + z) * photonField->getRedshiftScaling(z);
 
     // check for interaction

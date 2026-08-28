@@ -54,11 +54,15 @@ public:
         return this->isRedshiftDependent;
     }
     
-    void setFieldName(std::string fieldName) {
+    virtual void setFieldName(std::string fieldName) {
         this->fieldName = fieldName;
     }
     
-    int getMass() const {
+    virtual void setMass(double mass)  {
+    	this->mass = mass;
+    }
+
+    virtual double getMass() const {
         return this->mass;
     }
     
@@ -80,7 +84,7 @@ public:
 	double getNeutrinoDensity(double eNeutrino, double z = 0.) const;
 	double getMinimumNeutrinoEnergy(double z) const;
 	double getMaximumNeutrinoEnergy(double z) const;
-	void setQuantile(double q);
+	void setQuantile(double q);	
 
 protected:
 	double blackbodyTemperature;

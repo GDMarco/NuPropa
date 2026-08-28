@@ -40,9 +40,9 @@ Channels::Channels(std::vector<std::string> interactionChannels, std::vector<int
 int Channels::getChannelIndex(std::string interactionChannel) const {
     int indexChannel = -1;
     
-    for (int i; i <= this->interactionChannels.size(); i++) {
+    for (size_t i = 0; i < this->interactionChannels.size(); i++) {
         if (this->interactionChannels[i] == interactionChannel) {
-            indexChannel = i;
+            indexChannel = static_cast<int>(i);
         } else {
             continue;
         }
@@ -68,7 +68,7 @@ void Channels::setInteractionFolderPath(std::string interactionFolderPath) {
 }
 
 void Channels::setInactiveChannel(std::string interactionChannel) {
-    for (int i; i <= this->interactionChannels.size(); i++) {
+    for (size_t i = 0; i < this->interactionChannels.size(); i++) {
         if (this->interactionChannels[i] == interactionChannel) {
             this->active[i] = false;
         } else {
@@ -78,4 +78,3 @@ void Channels::setInactiveChannel(std::string interactionChannel) {
 }
 
 } // end namespace nupropa
-

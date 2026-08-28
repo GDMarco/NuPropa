@@ -27,13 +27,21 @@ private:
     std::vector<std::vector<int>> tabProdChanId;
     
     std::vector<int> selectedIndexes; // 1st step of selecting the rate
-    int selectedIndex; // 2nd step to take the channel for the perform interaction
+    int selectedIndex = 0; // 2nd step to take the channel for the perform interaction
     
     std::unordered_map<int, std::pair<std::string, std::string>> ratesDictionary;
     std::vector<std::vector<double>> channelProbability;
     
 public:
  
+    struct ChannelSelection {
+        std::vector<double> tabE;
+        std::vector<double> tabs;
+        std::vector<std::vector<double>> tabCDF;
+        std::vector<int> prodChanId;
+        bool valid = false;
+    };
+
     ChannelsBundle(ref_ptr<Channels> channels, std::string fname);
     
     bool intToBool(int active);
@@ -44,15 +52,16 @@ public:
     
     double findClosestRedshift(double z, const std::vector<double> &redshifts) const;
     void selectIndexes(std::string massCombRedshift, int ID, int IDbkg);
-    std::vector<std::string> getAlphasBetas(int ID, int IDbkg) ;
+    std::vector<std::string> getAlphasBetas(int ID, int IDbkg) const;
     std::vector<int> selectProdChanId();
     
-    std::vector<std::vector<double>> selectedRates(const std::vector<int>& indexes);
-    std::vector<std::vector<double>> selectedEnergies(const std::vector<int>& indexes);
+    std::vector<std::vector<double>> selectedRates(const std::vector<int>& indexes) const;
+    std::vector<std::vector<double>> selectedEnergies(const std::vector<int>& indexes) const;
     
     double getRate(int ID, int IDBkg, std::string massComb, double z, double E);
+    ChannelSelection selectInteraction(int ID, int IDBkg, std::string massComb, double z, double E) const;
     
-    std::vector<double> fillTableZeros(std::vector<double> table, size_t size);
+    std::vector<double> fillTableZeros(std::vector<double> table, size_t size) const;
     void computeInteractionProbabilities(std::vector<std::vector<double>> rates);
     void checkProbabilityConsistency(std::vector<std::vector<double>> probabilityMatrix, int cols, int rows);
     void selectIndex(std::vector<double> tabEnergy, double E);

@@ -2,7 +2,7 @@
 # crpropa is not found
 import sys
 
-sys.path.insert(0, "/Applications/CRPropa/NuGammaInteraction/CRPropa3/build")
+sys.path.insert(0, "/sdf/group/fermi/u/gaetano/ALPinist/CRPropa3/build")
 
 try:
 	import crpropa

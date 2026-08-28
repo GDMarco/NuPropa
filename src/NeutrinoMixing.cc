@@ -178,9 +178,9 @@ int NeutrinoMixing::oscillateFlavour(int ID, double E, double L) {
     int alpha = IdToFlavourIndex(ID);
     int sign = (ID < 0) ? -1 : +1;
     
-    double conversionPhase = eV * eV * eV * eV / h_planck * 2 * M_PI / c_light / 2;
+    const double conversionPhase = eV * eV * M_PI / (h_planck * c_light);
     
-    double phase10 = (massValues[1] * massValues[1] - massValues[0] * massValues[0]) * L / E;
+    double phase10 = (massValues[1] * massValues[1] - massValues[0] * massValues[0]) * L / E * conversionPhase;
     double phase20 = (massValues[2]  * massValues[2] - massValues[0] * massValues[0]) * L / E * conversionPhase;
     double phase21 = (massValues[2] * massValues[2] - massValues[1] * massValues[1]) * L / E * conversionPhase;
 
@@ -218,7 +218,9 @@ int NeutrinoMixing::oscillateFlavour(int ID, double E, double L) {
             return IdOscillated;
         }
     }
+    
+    // Fallback in case of rounding error: choose the last flavour
+    return sign * flavourIndexToId(2);
 }
 
 } // end namespace nupropa
-

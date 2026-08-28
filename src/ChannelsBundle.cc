@@ -9,6 +9,7 @@
 #include <string>
 #include <stdexcept>
 #include <filesystem>
+#include <cstdlib>
 
 #include <iostream>
 #include <sstream>
@@ -98,7 +99,7 @@ void ChannelsBundle::loadRateFile(const std::string& filename) {
     }
     infile.close();
     
-    
+    //std::cout << "size VecEn-Rate: " << vecEnergy.size() << ", " << vecRate.size() << std::endl;     
     this->tabEnergy.push_back(vecEnergy);
     this->tabRate.push_back(vecRate);
     
@@ -175,7 +176,7 @@ void ChannelsBundle::loadProductsChannelId(const std::string& filename) {
     }
 }
 
-std::vector<std::string> ChannelsBundle::getAlphasBetas(int ID, int IDbkg) {
+std::vector<std::string> ChannelsBundle::getAlphasBetas(int ID, int IDbkg) const {
     
     std::vector<std::string> alphasBetas;
     
@@ -229,8 +230,8 @@ std::vector<std::string> ChannelsBundle::getAlphasBetas(int ID, int IDbkg) {
     } else {    // for alpha != beta
         
         std::string interacting = "NeutrinoiAntineutrinoj";
-        for (const auto& [key, val] : ratesDictionary) {
-
+        for (auto it = ratesDictionary.begin(); it != ratesDictionary.end(); ++it) {
+            const auto& val = it->second;
             std::string interactionChannel = val.first;
             
             if (interactionChannel.find(interacting) == 0) {
@@ -292,7 +293,7 @@ std::vector<std::string> ChannelsBundle::getAlphasBetas(int ID, int IDbkg) {
     return alphasBetas;
 }
 
-std::vector<double> ChannelsBundle::fillTableZeros(std::vector<double> table, size_t size) {
+std::vector<double> ChannelsBundle::fillTableZeros(std::vector<double> table, size_t size) const {
     
     if (table.size() < size) {
         double difference = size - table.size();
@@ -370,8 +371,9 @@ void ChannelsBundle::checkProbabilityConsistency(std::vector<std::vector<double>
 }
 
 void ChannelsBundle::selectIndex(std::vector<double> tabEnergy, double E) {
+    this->selectedIndex = 0;    
     
-    double distEnergy = 1e6; // to minimize this value
+    double distEnergy = std::numeric_limits<double>::max();
     int iEnergy = -1;
     for (size_t i = 0; i < tabEnergy.size(); ++i) {
         double dist = abs(E - tabEnergy[i]);
@@ -393,7 +395,7 @@ void ChannelsBundle::selectIndex(std::vector<double> tabEnergy, double E) {
     int selChannel = -1;
     
     // build a "cumulative function" and select the channel
-    for (int i = 0; i < channelProbability.size() - 1; ++i) {
+    for (int i = 0; i < this->channelProbability.size() - 1; ++i) {
         tabCDFLow = tabCDFLow + channelProbability[i];
         tabCDFUpp = tabCDFUpp + channelProbability[i + 1];
         if ((tabCDFLow < iRand) && (iRand <= tabCDFUpp)) {
@@ -403,7 +405,9 @@ void ChannelsBundle::selectIndex(std::vector<double> tabEnergy, double E) {
     }
 
     this->selectedIndex = selChannel;
- 
+    if (this->selectedIndex < 0 || this->selectedIndex >= this->channelProbability.size()) {
+        throw std::runtime_error("Invalid selectedIndex");
+    }
 }
 
 double ChannelsBundle::findClosestRedshift(double z, const std::vector<double> &redshifts) const {
@@ -427,7 +431,9 @@ void ChannelsBundle::selectIndexes(std::string massCombRedshift, int ID, int IDb
     std::vector<std::string> alphasBetas = getAlphasBetas(ID, IDbkg);
     std::vector<int> indexes;
     
-    for (const auto& [key, val] : this->ratesDictionary) {
+    for (auto it = this->ratesDictionary.begin(); it != this->ratesDictionary.end(); ++it) {
+        int key = it->first;
+        const auto& val = it->second;
         //std::cout << "in ChannelBundle, in selectIndexs, in for cycle" << std::endl;
         if (std::find(alphasBetas.begin(), alphasBetas.end(), val.first) != alphasBetas.end() && val.second == massCombRedshift) {
             //std::cout << "in ChannelBundle, in selectIndexs for cycle: key: " << key << std::endl;
@@ -438,7 +444,7 @@ void ChannelsBundle::selectIndexes(std::string massCombRedshift, int ID, int IDb
     this->selectedIndexes = indexes;
 }
 
-std::vector<std::vector<double>> ChannelsBundle::selectedRates(const std::vector<int>& indexes) {
+std::vector<std::vector<double>> ChannelsBundle::selectedRates(const std::vector<int>& indexes) const {
     
     std::vector<std::vector<double>> rates;
     
@@ -451,7 +457,7 @@ std::vector<std::vector<double>> ChannelsBundle::selectedRates(const std::vector
     return rates;
 }
 
-std::vector<std::vector<double>> ChannelsBundle::selectedEnergies(const std::vector<int>& indexes) {
+std::vector<std::vector<double>> ChannelsBundle::selectedEnergies(const std::vector<int>& indexes) const {
     
     std::vector<std::vector<double>> energies;
 
@@ -532,12 +538,18 @@ double ChannelsBundle::getRate(int ID, int IDbkg, std::string massComb, double z
     std::string zDec = out.str();
     
     std::string redshift = "_z" + zDec;
-    selectIndexes(massComb + redshift, ID, IDbkg);
+    std::vector<int> indexes;
+    std::vector<std::string> alphasBetas = getAlphasBetas(ID, IDbkg);
+    for (auto it = this->ratesDictionary.begin(); it != this->ratesDictionary.end(); ++it) {
+        int key = it->first;
+        const auto& val = it->second;
+        if (std::find(alphasBetas.begin(), alphasBetas.end(), val.first) != alphasBetas.end() && val.second == massComb + redshift) {
+            indexes.push_back(key);
+        }
+    }
     
-    std::vector<std::vector<double>> rates = selectedRates(this->selectedIndexes);
-    std::vector<std::vector<double>> energies = selectedEnergies(this->selectedIndexes);
-
-    this->channelProbability.clear();
+    std::vector<std::vector<double>> rates = selectedRates(indexes);
+    std::vector<std::vector<double>> energies = selectedEnergies(indexes);
     
     if (energies.size() == 0) {
         return -1;
@@ -545,11 +557,11 @@ double ChannelsBundle::getRate(int ID, int IDbkg, std::string massComb, double z
     
     } else if (energies.size() == 1) { // i.e. indexes has only one element
 
-        std::vector<double> ones(energies.size(), 1);
-        this->channelProbability.push_back(ones);
-        
-        if (E < energies[0].front() or (E > energies[0].back()))
+	if (E < energies[0].front() or (E > energies[0].back())) {
             return -1;
+        }
+        //if (E < energies[0].front() or (E > energies[0].back()))
+        //    return -1;
         
         double rate = interpolate(E, energies[0], rates[0]);
         return rate;
@@ -577,15 +589,144 @@ double ChannelsBundle::getRate(int ID, int IDbkg, std::string massComb, double z
             }
         }
         
-        computeInteractionProbabilities(resizedRates);
-        
         if (E < energies[maximumIndex].front() or (E > energies[maximumIndex].back()))
             return -1;
         
         // interaction rate
-        double rate = interpolate(E, this->tabEnergy[maximumIndex], totalRate);
+        double rate = interpolate(E, energies[maximumIndex], totalRate);
         return rate;
     }
+}
+
+ChannelsBundle::ChannelSelection ChannelsBundle::selectInteraction(int ID, int IDbkg, std::string massComb, double z, double E) const {
+    
+    ChannelSelection sel;
+    
+    std::vector<double> redshifts = {0, 2, 5, 8, 11, 15, 20, 25, 30, 40, 50};
+    double zClosest = findClosestRedshift(z, redshifts);
+    
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(1) << zClosest;
+    std::string zDec = out.str();
+    
+    std::string redshift = "_z" + zDec;
+    
+    std::vector<int> indexes;
+    std::vector<std::string> alphasBetas = getAlphasBetas(ID, IDbkg);
+    for (auto it = this->ratesDictionary.begin(); it != this->ratesDictionary.end(); ++it) {
+        int key = it->first;
+        const auto& val = it->second;
+        if (std::find(alphasBetas.begin(), alphasBetas.end(), val.first) != alphasBetas.end() && val.second == massComb + redshift) {
+            indexes.push_back(key);
+        }
+    }
+    
+    if (indexes.empty()) {
+        return sel;
+    }
+    
+    std::vector<std::vector<double>> rates = selectedRates(indexes);
+    std::vector<std::vector<double>> energies = selectedEnergies(indexes);
+    
+    if (energies.empty()) {
+        return sel;
+    }
+    
+    int selChannel = 0;
+    
+    double iRand = 0.0;
+    if (energies.size() > 1) {
+        size_t maximumTableSize = 0;
+        int maximumIndex = 0;
+        for (size_t j = 0; j < energies.size(); ++j) {
+            size_t tableSize = energies[j].size();
+            if (tableSize > maximumTableSize) {
+                maximumTableSize = tableSize;
+                maximumIndex = static_cast<int>(j);
+            }
+        }
+        
+        if (maximumTableSize == 0) {
+            return sel;
+        }
+        
+        std::vector<std::vector<double>> resizedRates;
+        resizedRates.reserve(rates.size());
+        for (size_t j = 0; j < rates.size(); ++j) {
+            resizedRates.push_back(fillTableZeros(rates[j], maximumTableSize));
+        }
+        
+        std::vector<std::vector<double>> channelProb(
+            resizedRates.size(), std::vector<double>(maximumTableSize, 0.0));
+        
+        for (size_t c = 0; c < maximumTableSize; ++c) {
+            double sum = 0.0;
+            for (size_t r = 0; r < resizedRates.size(); ++r) {
+                sum += resizedRates[r][c];
+            }
+            if (sum == 0.0) {
+                continue;
+            }
+            for (size_t r = 0; r < resizedRates.size(); ++r) {
+                channelProb[r][c] = resizedRates[r][c] / sum;
+            }
+        }
+        
+        if (E < energies[maximumIndex].front() or (E > energies[maximumIndex].back())) {
+            return sel;
+        }
+        
+        // Find closest energy bin on the largest table
+        double distEnergy = std::numeric_limits<double>::max();
+        int iEnergy = -1;
+        for (size_t i = 0; i < energies[maximumIndex].size(); ++i) {
+            double dist = std::abs(E - energies[maximumIndex][i]);
+            if (dist < distEnergy) {
+                distEnergy = dist;
+                iEnergy = static_cast<int>(i);
+            }
+        }
+        
+        if (iEnergy < 0) {
+            return sel;
+        }
+        
+        Random &randomChannel = Random::instance();
+        iRand = randomChannel.rand();
+        double cum = 0.0;
+        selChannel = -1;
+        for (size_t r = 0; r < channelProb.size(); ++r) {
+            cum += channelProb[r][iEnergy];
+            if (iRand <= cum) {
+                selChannel = static_cast<int>(r);
+                break;
+            }
+        }
+        if (selChannel < 0) {
+            selChannel = static_cast<int>(channelProb.size()) - 1;
+        }
+    }
+    
+    if (selChannel < 0 || selChannel >= static_cast<int>(indexes.size())) {
+        return sel;
+    }
+    
+    int selectedGlobalIndex = indexes[selChannel];
+    if (selectedGlobalIndex < 0 ||
+        selectedGlobalIndex >= static_cast<int>(tabE.size()) ||
+        selectedGlobalIndex >= static_cast<int>(tabs.size()) ||
+        selectedGlobalIndex >= static_cast<int>(tabCDF.size()) ||
+        selectedGlobalIndex >= static_cast<int>(tabProdChanId.size())) {
+        return sel;
+    }
+    
+    sel.tabE = tabE[selectedGlobalIndex];
+    sel.tabs = tabs[selectedGlobalIndex];
+    sel.tabCDF = tabCDF[selectedGlobalIndex];
+    sel.prodChanId = tabProdChanId[selectedGlobalIndex];
+    sel.valid = true;
+
+    return sel;
 }
 
 std::vector<int> ChannelsBundle::getSelectedIndexes() {
@@ -597,4 +738,3 @@ int ChannelsBundle::getSelectedIndex() {
 }
 
 } // end namespace nupropa
-

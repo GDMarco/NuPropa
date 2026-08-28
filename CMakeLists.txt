@@ -64,6 +64,7 @@ add_library(${PLUGINNAME} MODULE
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoOscillation.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoMixing.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/NeutrinoField.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Hadronisations.cc
 )
 
 set_source_files_properties(
@@ -75,10 +76,26 @@ set_source_files_properties(
 # /Applications/CRPropa/NuNuInteractionv1/CRPropa3/libs/kiss
 include_directories(include ${crpropaInstallPrefix}/libs/kiss)
 
-# to change!
-include_directories(include /Applications/CRPropa/ALPinist/CRPropa3/libs/eigen3)
+# Optional PYTHIA8 paths (set via -DPYTHIA8_INCLUDE_DIR and -DPYTHIA8_LIBRARY)
+if(PYTHIA8_INCLUDE_DIR)
+  include_directories(${PYTHIA8_INCLUDE_DIR})
+endif()
 
-target_link_libraries(${PLUGINNAME} ${CRPROPA_LIB} ${PYTHON_LIBRARIES})
+
+# Resolve PYTHIA8 library path (file or directory)
+set(PYTHIA8_LIBRARY_FILE "")
+if(PYTHIA8_LIBRARY)
+  if(IS_DIRECTORY "${PYTHIA8_LIBRARY}")
+    find_library(PYTHIA8_LIBRARY_FILE NAMES pythia8 libpythia8 PATHS "${PYTHIA8_LIBRARY}" NO_DEFAULT_PATH)
+  else()
+    set(PYTHIA8_LIBRARY_FILE "${PYTHIA8_LIBRARY}")
+  endif()
+endif()
+
+# to change!
+include_directories(include /sdf/group/fermi/u/gaetano/ALPinist/CRPropa3/libs/eigen3)
+
+target_link_libraries(${PLUGINNAME} ${CRPROPA_LIB} ${PYTHON_LIBRARIES} ${PYTHIA8_LIBRARY_FILE})
 
 set_target_properties(${PLUGINNAME} PROPERTIES PREFIX "")
 set_target_properties(${PLUGINNAME} PROPERTIES OUTPUT_NAME "_${PLUGINNAME}")

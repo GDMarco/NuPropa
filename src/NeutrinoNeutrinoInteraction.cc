@@ -5,6 +5,7 @@
 #include <crpropa/Units.h>
 #include <crpropa/Random.h>
 
+
 #include <string>
 #include <fstream>
 #include <limits>
@@ -12,16 +13,19 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 
 namespace nupropa {
 
 using namespace crpropa;
 
-NeutrinoNeutrinoInteraction::NeutrinoNeutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries, double limit) : Module() {
-    setNeutrinoField(neutrinoField);
+NeutrinoNeutrinoInteraction::NeutrinoNeutrinoInteraction(ref_ptr<NeutrinoField> neutrinoField, ref_ptr<NeutrinoMixing> neutrinoMixing, bool haveSecondaries, double limit) : Module(), secondariesDistribution("dsigdcosth") {
+
     setHaveSecondaries(haveSecondaries);
     setLimit(limit);
+    setNeutrinoField(neutrinoField);
     setNeutrinoMixing(neutrinoMixing);
+
 }
 
 void NeutrinoNeutrinoInteraction::setNeutrinoField(ref_ptr<NeutrinoField> neutrinoField) {
@@ -30,15 +34,18 @@ void NeutrinoNeutrinoInteraction::setNeutrinoField(ref_ptr<NeutrinoField> neutri
     std::string fname = neutrinoField->getFieldName();
     setDescription("NeutrinoNeutrinoInteraction::Module" + fname);
     setInteractionTag("NuNuInt");
-    
-    std::string pathNuNu = "/Applications/CRPropa/NuNuInteractionv1/CRPropa3-data-zDep/dataOff/NeutrinoInteractions/NeutrinoNeutrinoInteraction/NeutrinoNeutrinoElastic/";
+
+    std::string pathNuNu = "/sdf/home/g/gaetano/CRPropa/CRPropa3-data/dataOff/NeutrinoInteractions/NeutrinoNeutrinoInteraction/NeutrinoNeutrinoElastic/";
     // getDataPath("NeutrinoNeutrinoInteraction/NeutrinoNeutrinoElastic/"
-    std::string pathNuiNuj = "/Applications/CRPropa/NuNuInteractionv1/CRPropa3-data-zDep/dataOff/NeutrinoInteractions/NeutrinoNeutrinoInteraction/NeutrinoiNeutrinojElastic/";
+    std::string pathNuiNuj = "/sdf/home/g/gaetano/CRPropa/CRPropa3-data/dataOff/NeutrinoInteractions/NeutrinoNeutrinoInteraction/NeutrinoiNeutrinojElastic/";
     // getDataPath("NeutrinoNeutrinoInteraction/NeutrinoiNeutrinojElastic/"
-    
+
     initRate(pathNuNu + "rate_" + fname, pathNuiNuj + "rate_" + fname);
     initCumulativeRate(pathNuNu + "cdf_" + fname, pathNuiNuj + "cdf_" + fname);
-    
+
+    buildSecondariesDistributionClass();
+
+
 }
 
 void NeutrinoNeutrinoInteraction::setNeutrinoMixing(ref_ptr<NeutrinoMixing> neutrinoMixing) {
@@ -80,16 +87,16 @@ void NeutrinoNeutrinoInteraction::loadRateFile(const std::string& fileName) {
 }
 
 void NeutrinoNeutrinoInteraction::initRate(std::string pathNuNu, std::string pathNuiNuj) {
-    
+
     this->tabEnergy.clear();
     this->tabRate.clear();
-    
+
     std::vector<std::string> masses = {"m1", "m2", "m3"};
     std::vector<double> redshifts = {0, 2, 5, 8, 11, 15, 20, 25, 30, 40, 50}; // same as computed in NuPropa-data
-    
+
     int i = 0;
     std::unordered_map<std::string, int> ratesDict;
-    
+
     // 9 combination of masses! m1_m1, m1_m2, m2_m1, ...
     /**
      m1_m1_z0 NuNu 0
@@ -99,15 +106,15 @@ void NeutrinoNeutrinoInteraction::initRate(std::string pathNuNu, std::string pat
      */
     for (const auto& a : masses) {
         for (const auto& z : redshifts) {
-            
+
             std::ostringstream out;
             out << std::fixed << std::setprecision(1) << z;
             std::string zDec = out.str();
-            
+
             loadRateFile(pathNuNu + "_" + a + "_z" + zDec + ".txt");
             ratesDict[this->neutrinoField->getFieldName() + "_" + a + "_z" + zDec + "_NuNu"] = i;
             i = i + 1;
-            
+
             loadRateFile(pathNuiNuj + "_" + a + "_z" + zDec + ".txt");
             ratesDict[this->neutrinoField->getFieldName() + "_" + a + "_z" + zDec + "_NuiNuj"] = i;
             i = i + 1;
@@ -117,21 +124,21 @@ void NeutrinoNeutrinoInteraction::initRate(std::string pathNuNu, std::string pat
 }
 
 void NeutrinoNeutrinoInteraction::loadCumulativeRateFile(const std::string& fileName) {
-    
+
     std::ifstream infile(fileName.c_str());
-    
+
     if (!infile.good())
         throw std::runtime_error("NeutrinoNeutrinoInteraction: could not open file" + fileName);
-    
+
     // skip header
     while (infile.peek() == '#')
         infile.ignore(std::numeric_limits < std::streamsize > ::max(), '\n');
-    
+
     // declare the row vectors
     std::vector<double> vecE;
     std::vector<double> vecs;
     std::vector<std::vector<double>> vecCDF;
-    
+
     // read s values in the first line
     double a;
     infile >> a; // skip the first value
@@ -139,15 +146,15 @@ void NeutrinoNeutrinoInteraction::loadCumulativeRateFile(const std::string& file
         infile >> a;
         vecs.push_back(pow(10, a) * eV * eV);
     }
-    
+
     // read all the following lines: E, cdf values
     while(infile.good()) {
         infile >> a;
         if (!infile)
             break; // end of file
-        
+
         vecE.push_back(pow(10, a) * eV);
-        
+
         std::vector<double> cdf;
         for (int i = 0; i < vecs.size(); i++) {
             infile >> a;
@@ -155,7 +162,7 @@ void NeutrinoNeutrinoInteraction::loadCumulativeRateFile(const std::string& file
         }
         vecCDF.push_back(cdf);
     }
-    
+
     this->tabs.push_back(vecs);
     this->tabE.push_back(vecE);
     this->tabCDF.push_back(vecCDF);
@@ -167,17 +174,17 @@ void NeutrinoNeutrinoInteraction::initCumulativeRate(std::string pathNuNu, std::
     this->tabE.clear();
     this->tabs.clear();
     this->tabCDF.clear();
-    
+
     std::vector<std::string> masses = {"m1", "m2", "m3"};
     std::vector<double> redshifts = {0, 2, 5, 8, 11, 15, 20, 25, 30, 40, 50}; // same as computed in NuPropa-data
-    
+
     for (const auto& a : masses) {
         for (const auto& z : redshifts) {
-            
+
             std::ostringstream out;
             out << std::fixed << std::setprecision(1) << z;
             std::string zDec = out.str();
-            
+
             loadCumulativeRateFile(pathNuNu + "_" + a + "_z" + zDec + ".txt");
             loadCumulativeRateFile(pathNuiNuj + "_" + a + "_z" + zDec + ".txt");
         }
@@ -188,200 +195,73 @@ void NeutrinoNeutrinoInteraction::setRelativisticInteraction(double m1, double m
     this->relInteraction = new RelativisticInteraction(m1, m2, E, s);
 }
 
-// the structure is inspired by EMInverseCompton class etc.
-class NeutrinoNeutrinoSecondariesDistribution {
-    private:
-        std::vector< std::vector<double> > data;
-        std::vector<double> s_values;
-        std::vector<double> costh13_com_values;
-        size_t Ns;
-        size_t Nrer;
-        double s_min;
-        double s_max;
-        double costh_min;
-        double costh_max;
-        double dcosth;
-        double dls;
-    
-    public:
-        
-    NeutrinoNeutrinoSecondariesDistribution(std::string variable, int idChannel, double mass, double massField) {
-        
-        Ns = 1000;
-        Nrer = 1000;
-        
-        s_min = mass * mass + massField * massField;
-        s_max = 1e28 * eV * eV; // value from the computed tables
-        dls = (log(s_max) - log(s_min)) / Ns;
-        
-        costh_min = -1;
-        costh_max = 1;
-        dcosth = (costh_max - costh_min) / Nrer;
-        
-        data = std::vector< std::vector<double> >(1000, std::vector<double>(1000));
-        std::vector<double> data_i(1000);
-        
-        // tabulating the s bin borders
-        s_values = std::vector<double>(1001);
-        for (size_t i = 0; i < Ns + 1; ++i)
-            s_values[i] = s_min * exp(i * dls);
-        
-        if (variable != "dsigdcosth")
-            throw std::runtime_error("The only available variable to compute the differential cross section is costheta13_com!");
-        
-        // tabulating the costh13_com bin borders
-        costh13_com_values = std::vector<double>(1001);
-        for (size_t i = 0; i < Nrer + 1; ++i)
-            costh13_com_values[i] = costh_min + i * dcosth;
-        
-        // to generate randomly the seed to produce the differential cross section
-        // Random &random = Random::instance();
-        // int seedDiffXS = random.randInt();
-        // not affecting the results
-        int seedDiffXS = 1;
-        
-        // for each s and costh13_com tabulate the cumulative differential cross section
-        for (size_t i = 0; i < Ns; i++) {
-            double s = s_min * exp((i + 0.5) * dls);
-            
-            // cumulative midpoint integration
-            data_i[0] = getDifferentialXS(s, variable, costh_min, idChannel, seedDiffXS) * dcosth * i;
-            // to check * (dcosth[i] - 1)!!!
-            
-            for (size_t j = 1; j < Nrer; j++) {
-                double costh13_com = costh_min + (j + 0.5) * dcosth;
-                double dcosth13_com = (j + 1) * dcosth - j * dcosth; // since we are on a linear scale, dcosth13_com == dcosth
-                
-                data_i[j] = getDifferentialXS(s, variable, costh13_com, idChannel, seedDiffXS) * dcosth13_com;
-                data_i[j] += data_i[j - 1];
-            }
-            data[i] = data_i;
-        }
-        
-    }
-    
-    double getDifferentialXS(double s, std::string variable, double variableValue, int idChannel, int seedDiffXS) {
-        
-        std::string partonicPath = "/Applications/CRPropa/NuPropaLap/PartonicCalculation/sigmaNu_interface/"; // to change with NUPROPA path
-        std::string interfacePath = partonicPath + "bin/";
-        
-        std::ostringstream ss;
-        ss << std::scientific << std::setprecision(5) << std::sqrt(s / GeV / GeV);
-        std::string Ecms = ss.str();
-        
-        double Ecms_val = std::sqrt(s / GeV / GeV);
-        
-        if (std::isnan(Ecms_val) || !std::isfinite(Ecms_val)) { // to format in CRPropa style!
-                std::ostringstream err;
-                err << "\n[FATAL] Ecms is NaN or infinite\n"
-                    << "--------------------------------\n"
-                    << "s               = " << s << "\n"
-                    << "GeV             = " << GeV << "\n"
-                    << "idChannel       = " << idChannel << "\n"
-                    << "variable        = " << variable << "\n"
-                    << "variableValue   = " << variableValue << "\n"
-                    << "seedDiffXS      = " << seedDiffXS << "\n"
-                    << "s/(GeV*GeV)     = " << s/(GeV*GeV) << "\n";
+void NeutrinoNeutrinoInteraction::buildSecondariesDistributionClass() {
 
-                throw std::runtime_error(err.str());
-        }
-        
-        std::string filePath = partonicPath + "dataDifferentialXS/channel" + std::to_string(idChannel) + "/";
-        std::string filename = filePath + variable + "_channel" + std::to_string(idChannel) +
-        "_Ecms" + Ecms + "_s" + std::to_string(seedDiffXS) + ".txt";
-        
-        if (!std::ifstream(filename)) {
-            std::ostringstream cmd;
-            cmd << interfacePath << "Main_Interface.exe"
-            << " -c " << idChannel
-            << " -s " << seedDiffXS
-            << " -E " << std::sqrt(s / GeV / GeV); // Ecms in GeV
-            
-            int result = std::system(cmd.str().c_str());
-            if (result != 0) {
-                std::ostringstream oss;
-                oss << "Error: Failed to run Main_Interface.exe, with exit code: " << result;
-                throw std::runtime_error(oss.str());
-            }
-        }
-        
-        std::vector<double> variableScan;
-        std::vector<double> differentialXS;
-        
-        std::ifstream infile(filename);
-        
-        if(!infile) {
-            std::ostringstream oss;
-            oss << "Error: could not open the differentialXS file. The filename is: " << filename;
-            throw std::runtime_error(oss.str());
-        } else {
-            std::string line;
-            double a, b;
-            
-            while (std::getline(infile, line)) {
-                // skip empty lines or lines starting with '#'
-                if (line.empty() || line[0] == '#') continue;
-                
-                std::istringstream iss(line);
-                if (iss >> a >> b) {
-                    variableScan.push_back(a);
-                    differentialXS.push_back(b);
-                } else {
-                    // if parsing failed on a non-comment line, optionally throw or skip
-                    std::ostringstream oss;
-                    oss << "Error: could not parse line: \"" << line << "\" in file " << filename;
-                    throw std::runtime_error(oss.str());
-                }
-            }
-            infile.close();
-        }
-        
-        double diffXS = interpolate(variableValue, variableScan, differentialXS);
-        return diffXS;
-        
-    }
-    
-    // draw random costh13_com from the differential cross section distribution
-    double sample(double s) {
-        size_t idx = std::lower_bound(s_values.begin(), s_values.end(), s) - s_values.begin();
-        std::vector<double> s0 = data[idx];
-        
-        Random &random = Random::instance();
-        size_t j = random.randBin(s0); // draw random bin (lower bin boundary returned)
-        double costh13_comRand = costh_min + j * dcosth;
-        
-        return costh13_comRand;
-    }
-        
-};
+    if (!haveSecondaries)
+        return;
 
-void NeutrinoNeutrinoInteraction::performInteraction(Candidate *candidate, int index, double mass) const {
-    
+    std::vector<int> channelsId = {1, 3, 5, 8};
+
+    for (int i = 0; i < channelsId.size(); ++i) {
+        this->secondariesDistribution.buildChannel(channelsId[i]);
+    }
+}
+
+void NeutrinoNeutrinoInteraction::performInteraction(Candidate *candidate, int index, double mass, int IDbkg) const {
+
+    if (!haveSecondaries) {
+        candidate->setActive(false);
+        return;
+    }
+
     double E = candidate->current.getEnergy();
-    double ID = candidate->current.getId();
+    int ID = candidate->current.getId();
     double w = 1; // no thinning, TBD
-    
+
     // here I just need the index found before in computeRate
     std::vector<double> vecE = this->tabE[index];
     std::vector<double> vecs = this->tabs[index];
     std::vector<std::vector<double>> vecCDF = this->tabCDF[index];
-    
+
     // check if in tabulated energy range
-    if (E < vecE.front() or (E > vecE.back()))
+    if (vecE.empty() || vecs.empty() || vecCDF.empty()) {
+        std::cout << "NuNu no secondaries: empty tables"
+                  << " index=" << index << std::endl;
+        return;
+    }
+    if (E < vecE.front() or (E > vecE.back())) {
+        std::cout << "NuNu no secondaries: E outside secondary table"
+                  << " E=" << E / EeV
+                  << " Emin=" << vecE.front() / EeV
+                  << " Emax=" << vecE.back() / EeV
+                  << std::endl;
             return;
+    }
 
     // sample the value of s
     Random &random = Random::instance();
     size_t i = closestIndex(E, vecE);  // find closest tabulation point
+    if (i >= vecCDF.size()) {
+        std::cout << "NuNu no secondaries: CDF index out of range"
+                  << " i=" << i << " size=" << vecCDF.size() << std::endl;
+        return;
+    }
     size_t j = random.randBin(vecCDF[i]);
-    double lo = std::max(mass * mass + this->neutrinoFieldMass * this->neutrinoFieldMass, vecs[j-1]); // first s-tabulation point below min(s_kin);
-    
+    if (j >= vecs.size()) {
+        std::cout << "NuNu no secondaries: s-bin out of range"
+                  << " j=" << j << " size=" << vecs.size() << std::endl;
+        return;
+    }
     double hi = vecs[j];
+    double sThr = std::pow(mass + this->neutrinoFieldMass, 2);
+    double lo = (j == 0) ? sThr : std::max(sThr, vecs[j - 1]); // first s-tabulation point below min(s_kin)
+    if (hi < lo)
+        hi = lo;
     double s = lo + random.rand() * (hi - lo);
-    
+
     int idInteraction;
-    
-    if (ID == this->neutrinoFieldID) {
+
+    if (ID == IDbkg) {
         if (ID > 0) {
             idInteraction = 1; // in Rhorry's "nu_e nu_e -> nu_e nu_e"
         } else {
@@ -394,25 +274,84 @@ void NeutrinoNeutrinoInteraction::performInteraction(Candidate *candidate, int i
             idInteraction = 8; // in Rhorry's "nu_e~ nu_mu~ -> nu_e~ nu_mu~"
         }
     }
-    
-    // sample the cosine of theta13_com, the only available for now
-    std::string variable = "dsigdcosth";
-    static NeutrinoNeutrinoSecondariesDistribution distribution(variable, idInteraction, mass, this->neutrinoFieldMass);
-    double costh13_com = distribution.sample(s);
-    
-    // see if this function wants the neutrino masses in J or kg!
-    setRelativisticInteraction(mass / c_squared, this->neutrinoFieldMass / c_squared, E, s);
-    
-    // energies of the secondary particles
-    std::vector<double> energies = this->relInteraction->getProductEnergiesLab(s, costh13_com, mass / c_squared, this->neutrinoFieldMass / c_squared);
-    
+
+    // sample the cosine of theta13_com
+    double costh13_com = this->secondariesDistribution.sample(idInteraction, s, mass, this->neutrinoFieldMass);
+    //std::cout << "costh13_com: " << costh13_com << std::endl;
+
+    std::vector<double> energies;
+    double z = candidate->getRedshift();
+    double targetMinEnergy = (1 + z) * this->neutrinoField->getMinimumNeutrinoEnergy(z);
+    double targetMaxEnergy = (1 + z) * this->neutrinoField->getMaximumNeutrinoEnergy(z);
+    try {
+        // see if this function wants the neutrino masses in J or kg!
+        // Use a local instance to avoid shared mutable state across threads.
+        RelativisticInteraction relInteraction(mass / c_squared,
+                                               this->neutrinoFieldMass / c_squared,
+                                               E, s);
+        // energies of the secondary particles
+        energies = relInteraction.getProductEnergiesLab(s, costh13_com, mass / c_squared, this->neutrinoFieldMass / c_squared);
+        if (energies.size() < 2) {
+            std::cout << "No secondaries: energies.size()=" << energies.size()
+                      << " channel=" << idInteraction << std::endl;
+            return;
+        }
+
+        double maxAvailable = E + relInteraction.getTargetEnergyLab();
+        double totalOutgoing = energies[0] + energies[1];
+        bool invalidEnergy = (!std::isfinite(totalOutgoing) || !std::isfinite(maxAvailable));
+        bool highEnergy = (totalOutgoing > 1.05 * maxAvailable);
+        for (double e : energies) {
+            if (!std::isfinite(e) || e < 0 || e > 1.05 * maxAvailable)
+                highEnergy = true;
+            if (!std::isfinite(e) || e < 0)
+                invalidEnergy = true;
+        }
+        if (invalidEnergy || highEnergy) {
+            std::cout << "Bad secondary energy: E=" << E / EeV
+                      << " target=" << relInteraction.getTargetEnergyLab() / EeV
+                      << " out=" << totalOutgoing / EeV
+                      << " ratio=" << totalOutgoing / maxAvailable
+                      << std::endl;
+            if (invalidEnergy)
+                throw std::runtime_error("Invalid secondary energy");
+        }
+    } catch (const std::exception& ex) {
+        std::cout << "NuNu secondary kinematics failed: " << ex.what()
+                  << " E=" << E / EeV
+                  << " s=" << s / (GeV * GeV)
+                  << " channel=" << idInteraction
+                  << " ID=" << ID
+                  << " IDbkg=" << IDbkg
+                  << " mass=" << mass / eV
+                  << " fieldMass=" << this->neutrinoFieldMass / eV
+                  << " targetMin=" << targetMinEnergy / eV
+                  << " targetMax=" << targetMaxEnergy / eV
+                  << " costh13_com=" << costh13_com
+                  << std::endl;
+        throw;
+    }
+    if (energies.size() < 2) {
+        std::cout << "No secondaries: energies.size()=" << energies.size()
+                  << " channel=" << idInteraction << std::endl;
+        return;
+    }
+    for (double e : energies) {
+        if (!std::isfinite(e))
+            return;
+    }
+
+    //std::cout << "Energy0 (EeV)" << energies[0] / EeV << std::endl;
+    //std::cout << "Energy1 (EeV)" << energies[1] / EeV << std::endl;
+
     Vector3d pos = random.randomInterpolatedPosition(candidate->previous.getPosition(), candidate->current.getPosition());
-    
+
     candidate->current.setEnergy(energies[0]);
-    
+
     // add the thinning
-    if (haveSecondaries)
-        candidate->addSecondary(this->neutrinoFieldID, energies[1], pos, w, interactionTag);
+    if (haveSecondaries) {
+        candidate->addSecondary(IDbkg, energies[1], pos, w, interactionTag);
+    }
 }
 
 double NeutrinoNeutrinoInteraction::findClosestRedshift(double z, const std::vector<double> &redshifts) const {
@@ -428,73 +367,88 @@ double NeutrinoNeutrinoInteraction::findClosestRedshift(double z, const std::vec
 }
 
 int NeutrinoNeutrinoInteraction::interactionIndex(int ID, int IDbkg, double mass, double z) const {
-    
-    int indexMass = this->neutrinoMixing->massToIndexMass(mass / eV) + 1;
+
+    int massIndex = this->neutrinoMixing->massToIndexMass(mass / eV);
+    int indexMass = massIndex + 1;
     std::string massComb = this->neutrinoField->getFieldName() + "_m" + std::to_string(indexMass);
-    
+
     std::string alphaBeta;
-    if (ID == this->neutrinoFieldID) {
+    if (ID == IDbkg) {
         alphaBeta = "_NuNu";
     } else {
         alphaBeta = "_NuiNuj";
     }
-    
+
     std::vector<double> redshifts = {0, 2, 5, 8, 11, 15, 20, 25, 30, 40, 50}; // same as computed in NuPropa-data
-    
+
     double zClosest = findClosestRedshift(z, redshifts);
     std::ostringstream out;
     out << std::fixed << std::setprecision(1) << zClosest;
     std::string zDec = out.str();
     std::string redshift = "_z" + zDec;
-    
-    auto it = this->ratesDictionary.find(massComb + redshift + alphaBeta);
+
+    std::string key = massComb + redshift + alphaBeta;
+    auto it = this->ratesDictionary.find(key);
 
     int index;
     if (it != this->ratesDictionary.end()) {
         index = it->second;
     } else {
-        throw std::runtime_error("Index not found in the dictionary rate!");
+        std::ostringstream err;
+        err << "NeutrinoNeutrinoInteraction rate key not found: " << key
+            << " ID=" << ID
+            << " IDbkg=" << IDbkg
+            << " mass=" << mass / eV
+            << " massIndex=" << massIndex
+            << " field=" << this->neutrinoField->getFieldName()
+            << " z=" << z
+            << " zClosest=" << zClosest;
+        throw std::runtime_error(err.str());
     }
-    
+
     return index;
 }
 
 void NeutrinoNeutrinoInteraction::process(Candidate *candidate) const {
-        
+
     double z = candidate->getRedshift();
     double E = candidate->current.getEnergy();
     int ID = candidate->current.getId();
-    
+
     if (!(abs(ID) == 12 || abs(ID) == 14 || abs(ID) == 16))
         return;
-    
+
     Random &random = Random::instance();
     int sign = (random.rand() < 0.5) ? -1 : +1;
     int IDbkg = sign * this->neutrinoMixing->fromMassToFlavour(this->neutrinoFieldMass / eV);
-    
-    std::cout << "Bkg flavour: " << IDbkg << std::endl;
-    
+
+    //std::cout << "IDbkg: " << IDbkg  << ", mass (eV): " << this->neutrinoFieldMass / eV << std::endl;
+
+    if (!(abs(IDbkg) == 12 || abs(IDbkg) == 14 || abs(IDbkg) == 16))
+        return;
+
     if (!(ID * IDbkg > 0))
         return;
-    
-    this->neutrinoFieldID = IDbkg;
+
     double mass = this->neutrinoMixing->fromFlavourToMass(ID) * eV; // returned in eV from the function
-    
+
     std::vector<double> vecEnergy;
     std::vector<double> vecRate;
-    
-    int index = interactionIndex(ID, this->neutrinoFieldID, mass, z);
-    
+
+    int index = interactionIndex(ID, IDbkg, mass, z);
+
     vecEnergy = this->tabEnergy[index];
     vecRate = this->tabRate[index];
-    
+
     // check if in tabulated energy range
     if (E < vecEnergy.front() or (E > vecEnergy.back()))
         return;
-    
+
     // interaction rate
     double rate = interpolate(E, vecEnergy, vecRate);
-    
+    if (!std::isfinite(rate) || rate <= 0)
+        return;
+
     // check for interaction
     double randDistance = -log(random.rand()) / rate;
     double step = candidate->getCurrentStep();
@@ -502,10 +456,10 @@ void NeutrinoNeutrinoInteraction::process(Candidate *candidate) const {
         candidate->limitNextStep(limit / rate);
         return;
     } else { // after performing interaction neutrino ceases to exist (hence return)
-        performInteraction(candidate, index, mass);
+        performInteraction(candidate, index, mass, IDbkg);
         return;
     }
-    
+
 }
 
 void NeutrinoNeutrinoInteraction::setInteractionTag(std::string tag) {
@@ -517,4 +471,3 @@ std::string NeutrinoNeutrinoInteraction::getInteractionTag() const {
 }
 
 } // end namespace nupropa
-
