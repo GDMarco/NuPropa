@@ -1,10 +1,10 @@
-<p align="center">
+<p align="right">
   <img src="images/nupropaLogo.png"
        alt="nupropa logo"
        width="300">
 </p>
 
-# $\nu$propa
+# `νpropa`
 
 Plugin to the CRPropa code to implement the propagation of highly energetic neutrinos through photon and neutrino backgrounds, e.g. the cosmic microwave and neutrino backgrounds. The production of the secondaries of interaction is treated.
 
@@ -14,7 +14,7 @@ Plugin to the CRPropa code to implement the propagation of highly energetic neut
 
 ## Installation 
 
-To install *$\nu$propa*, you will need to have CRPropa 3 installed (check [CRPropa](https://github.com/CRPropa/CRPropa3) for the latest version).
+To install `νpropa`, you will need to have CRPropa 3 installed (check [CRPropa](https://github.com/CRPropa/CRPropa3) for the latest version).
 
 Steps to install this plugin:
 
