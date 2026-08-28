@@ -4,9 +4,9 @@
        width="300">
 </p>
 
-# `νpropa`
+# The `νpropa` plug-in
 
-Plugin to the CRPropa code to implement the propagation of highly energetic neutrinos through photon and neutrino backgrounds, e.g. the cosmic microwave and neutrino backgrounds. The production of the secondaries of interaction is treated.
+It is an extension of the CRPropa code to implement the propagation of highly energetic neutrinos through photon and neutrino backgrounds, e.g. the cosmic microwave and neutrino backgrounds. The production of the secondaries of interaction is treated.
 
 (data/ folder contains the interaction rates employed in the interaction modules. Its position has to be sync in the code.)
 
@@ -14,9 +14,9 @@ Plugin to the CRPropa code to implement the propagation of highly energetic neut
 
 ## Installation 
 
-To install `νpropa`, you will need to have CRPropa 3 installed (check [CRPropa](https://github.com/CRPropa/CRPropa3) for the latest version).
+To install `νpropa`, you need to have installed CRPropa 3 (check [CRPropa](https://github.com/CRPropa/CRPropa3) for the latest version).
 
-Steps to install this plugin:
+Steps to install this plug-in:
 
 1. download the latest version of this code.
 ```
@@ -42,7 +42,7 @@ The hadronisation module requires a functioning version of [PYTHIA 8](https://py
 To account also for decays of heavy leptons, hadrons or bosons, this code needs to be used in combination with the [CRPYTHIAxDecays](https://github.com/GDMarco/CRPYTHIAxDecays) plug-in.  
 
 ## Disclaimer
-This plugin is provided by the authors “as is,” without warranty of any kind. Use it with caution and interpret the results carefully. 
+This plug-in is provided by the authors “as is,” without warranty of any kind. Use it with caution and interpret the results carefully. 
 For any questions or comments, please, reach out to the authors. 
 
 ## Acknowledgements
