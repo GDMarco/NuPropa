@@ -1,0 +1,8 @@
+# This folder contains code and notes which were developed/used as part of the differential calculation for the nupropa code
+
+# assorted_docs/ contains some assorted information (some brief notes, and some scrap notebooks used for squared amplitude calculations using FormCalc [via mathematica notebook])
+
+# sigmaNu/ a stand alone c++ framework for 2-to-2 and 2-to-3 differential calculations for neutrino-neutrino / neutrino-photon interactions. It has an interface to Recola2 (https://arxiv.org/abs/1711.07388), see also https://recola.gitlab.io/recola.html and uses Cuba (https://arxiv.org/abs/hep-ph/0404043, https://feynarts.de/cuba/) for numerical integration where required.
+
+# sigmaNu_interface/ is a cleaned up version of the above code which offers only access to the squared amplitudes (so no integration option)
+

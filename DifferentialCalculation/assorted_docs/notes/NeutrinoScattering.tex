@@ -59,7 +59,7 @@ In the case of the production of QCD particles, the cross-section is computed as
 \flushbottom
 
 \section{Introduction and notation}
-Testing here the citation procedure~\cite{Gauld:2021zmq}.
+%Testing here the citation procedure~\cite{Gauld:2021zmq}.
 
 In this document I summarise the computation of neutrino-photon and neutrino-neutrino scattering processes. This includes the computation of the squared amplitudes as well as the computation of the scattering process via numerical phase space integration.
 %
@@ -123,7 +123,8 @@ The most simple computation are the $\nu_1 q\bar q$ (1) and $\nu_1 \ell \bar \el
 The analytic result is implemented in the function \verb|ME2_nugam_nuffx({p},i,j,k,l,m)| 
 
 \paragraph{$\ell_1q\bar q^{\prime}$.}
-This computation is quite a bit more complicated and involves the $WW\gamma$ vertex (which makes the treatment of the \PW boson width effects more complicated). This computation has been performed neglecting the outgoing quark masses and includes the complex mass effects in the propagators. To have this squared amplitude exact in the complex mass scheme I may need to revisit the treatment of complex couplings. It has been validated in the $\Gamma_W \to 0$ and $m_{\ell}\to0$ limit against a similar amplitude in OpenLoops to 15 digits. When all width effects are included in OpenLoops, the agreement is typically 1per mille for some random phase space points I generated. These correspond to diagrams in Fig.~\ref{fig:diagrams}, but excluding type 7 and 10, and the squared amplitude is simply $|\mathcal{M}_W|^2$.
+This computation is quite a bit more complicated and involves the $WW\gamma$ vertex (which makes the treatment of the \PW boson width effects more complicated). This computation has been performed neglecting the outgoing quark masses and includes the complex mass effects in the propagators. It has been validated in the $\Gamma_W \to 0$ and $m_{\ell}\to0$ limit against a similar amplitude in OpenLoops to 15 digits. When complex mass scheme employed, the code is using Recola2. 
+These correspond to diagrams in Fig.~\ref{fig:diagrams}, but excluding type 7 and 10, and the squared amplitude is simply $|\mathcal{M}_W|^2$.
 
 \paragraph{$\ell_1 \nu_2 \bar\ell_2$.}
 This computation is the same as the one above, except that the mass of the fermion $\ell_2$ is retained.
@@ -154,7 +155,6 @@ Thus I compute directly the interference terms
 \eeq
 and make use of the existing results for the simpler cases.
 
-\alert{In this case I was only able to obtain a result making the assumption of real valued couplings. This means for a complex mass scheme, there are width effects missing in the computation. Typically these are permille effects and thus not relevant for the cross-section result. I may try revisit this later.}
 
 \section{Cross-section and phase space implementation}
 The scattering computation is generally performed according to
@@ -189,7 +189,6 @@ The first 2-body phase integral (involving particle $i$ and the composite system
 %
 This is convenient for us, since the integration limits are extremely simple in this case, and the required Lorentz boosts are applied numerically.
 
-\section{Results}
 
 \bibliography{NeutrinoScattering}
 
